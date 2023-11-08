@@ -32,6 +32,23 @@ void b_log::blog(logging_type type, std::string fmt, double date, ...){
     }
     
 }
+
+//@note LH added for tetsing logs
+void b_log::test_blog(logging_type type, double date, std::string src_file, std::string fmt, ...){
+    
+    if (_files.size() > 0 && _files.find(type) != _files.end()){
+        va_list args;
+        va_start(args,date);
+        FILE* file = _files[type];                                                                                                                                                           
+        std::fprintf(file,"%s || ", src_file.c_str());
+        fmt=fmt + "\n";
+        std::vfprintf(file,fmt.c_str(),args);
+        va_end(args);
+    }
+    
+}
+
+
 //a helper function to seperate_id
 batsched_tools::job_parts batsched_tools::get_job_parts(std::string job_id)
 {

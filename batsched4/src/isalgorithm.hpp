@@ -164,7 +164,9 @@ public:
     void ingest_variables();
     virtual void on_ingest_variables(const rapidjson::Document & doc);
     virtual void on_checkpoint_batsched(double date);
-    virtual void on_start_from_checkpoint(double date,const rapidjson::Value & batsim_config) = 0;
+    // @note LH removing "=0" to avoid abstract function error
+    //virtual void on_start_from_checkpoint(double date,const rapidjson::Value & batsim_config) = 0;
+    virtual void on_start_from_checkpoint(double date,const rapidjson::Value & batsim_config);
     virtual void on_first_jobs_submitted(double date) {}
     void on_signal_checkpoint();
     
@@ -201,9 +203,8 @@ protected:
     unsigned int generator_repair_time_seed;
     std::exponential_distribution<double> * repair_time_exponential_distribution;
     int nb_repair_time_exponential_distribution =0;
-   
     
-    
+
 
 protected:
     std::vector<std::string> _jobs_released_recently;
@@ -228,7 +229,6 @@ protected:
     std::string _output_folder;
     bool _exit_make_decisions = false;
     bool _recover_from_checkpoint = false;
-    
 
-    
+
 };

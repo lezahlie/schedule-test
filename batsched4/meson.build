@@ -43,6 +43,13 @@ batsched_deps = [
 #    'src/algo/crasher.cpp',
 #    'src/algo/crasher.hpp',
     
+#    @note LH added 
+#    'src/algo/easy_bf2.cpp',
+#    'src/algo/easy_bf2.hpp',
+#    'src/algo/easy_bf3.cpp',
+#    'src/algo/easy_bf3.hpp',
+
+
 #    'src/algo/easy_bf_fast.cpp',
 #    'src/algo/easy_bf_fast.hpp',
     
@@ -96,6 +103,10 @@ batsched_deps = [
 src = [
     'src/algo/easy_bf.cpp',
     'src/algo/easy_bf.hpp',
+    'src/algo/easy_bf2.cpp',
+    'src/algo/easy_bf2.hpp',
+    'src/algo/easy_bf3.cpp',
+    'src/algo/easy_bf3.hpp',
     'src/algo/easy_bf_fast2.cpp',
     'src/algo/easy_bf_fast2.hpp',
     'src/algo/easy_bf_fast2_holdback.cpp',
