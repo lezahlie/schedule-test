@@ -40,7 +40,7 @@ void b_log::test_blog(logging_type type, double date, std::string src_file, std:
         va_list args;
         va_start(args,date);
         FILE* file = _files[type];                                                                                                                                                           
-        std::fprintf(file,"%s || ", src_file.c_str());
+        std::fprintf(file,"%s || SIM TIME: [%f] || ", src_file.c_str(),date);
         fmt=fmt + "\n";
         std::vfprintf(file,fmt.c_str(),args);
         va_end(args);
