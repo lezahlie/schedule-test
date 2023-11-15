@@ -69,15 +69,15 @@ batsched_tools::job_parts batsched_tools::get_job_parts(std::string job_id)
         std::string checkpoint = ((parts.job_checkpoint != -1) ? "$" + std::to_string(parts.job_checkpoint) : "");
         std::string resubmit = ((parts.job_resubmit != -1) ? "#" + std::to_string(parts.job_resubmit+1) : "#1");
         parts.next_resubmit = parts.workload + "!"+
-                     std::to_string(parts.job_number) +
-                     resubmit +
-                     checkpoint;
+                    std::to_string(parts.job_number) +
+                    resubmit +
+                    checkpoint;
         checkpoint = ((parts.job_checkpoint != -1) ? "$" + std::to_string(parts.job_checkpoint+1) : "$1");
         resubmit = ((parts.job_resubmit != -1) ? "#" + std::to_string(parts.job_resubmit) : "");
         parts.next_checkpoint = parts.workload + "!"+
-                     std::to_string(parts.job_number) +
-                     resubmit +
-                     checkpoint;
+                    std::to_string(parts.job_number) +
+                    resubmit +
+                    checkpoint;
 
         return parts;
 }

@@ -13,6 +13,8 @@ using namespace std;
 // @note LH: testing macros
 #define T_LOG_INSTANCE _testBLOG
 #define SRC_FILE "easy_bf3.cpp"
+#define R2D(double_num) double_num.convert_to<double>()
+
 
 EasyBackfilling3::EasyBackfilling3(Workload * workload,
                                  SchedulingDecision * decision,
@@ -137,19 +139,19 @@ void EasyBackfilling3::on_machine_down_for_repair(batsched_tools::KILL_TYPES for
         
         //call me back when the repair is done
         _decision->add_call_me_later(batsched_tools::call_me_later_types::REPAIR_DONE,number,date+repair_time,date);
-       
+
         if (_schedule.get_number_of_running_jobs() > 0 )
         {
             //there are possibly some running jobs to kill
-             
+
             std::vector<std::string> jobs_to_kill;
             _schedule.get_jobs_running_on_machines(machine,jobs_to_kill);
-              
-              std::string jobs_to_kill_str = !(jobs_to_kill.empty())? std::accumulate( /* otherwise, accumulate */
+            
+            std::string jobs_to_kill_str = !(jobs_to_kill.empty())? std::accumulate( /* otherwise, accumulate */
             ++jobs_to_kill.begin(), jobs_to_kill.end(), /* the range 2nd to after-last */
             *jobs_to_kill.begin(), /* and start accumulating with the first item */
             [](auto& a, auto& b) { return a + "," + b; }) : "";
-              
+
             LOG_F(INFO,"jobs to kill %s",jobs_to_kill_str.c_str());
 
             if (!jobs_to_kill.empty()){
@@ -337,7 +339,7 @@ void EasyBackfilling3::make_decisions(double date,
                                      SortableJobOrder::CompareInformation *compare_info)
 {
     const Job * priority_job_before = _queue->first_job_or_nullptr();
-    string fmt = "FINISHED_JOB_ID = [%s]: EST FINISH TIME: [%f], REAL FINISH TIME: [%f] || DECISION EXACT = [%s], EXACT_DIFFERENCES_SO_FAR = [%d] ||  DECISION CLOSE = [%s], CLOSE_DIFFERENCES_SO_FAR = [%d]\n";
+    string fmt = "FINISHED_JOB_ID = [%s]: WALL TIME = [%.15f], START TIME = [%.15f], EST FINISH TIME: [%.15f], REAL FINISH TIME: [%.15f] || DECISION EXACT = [%s], EXACT_DIFFERENCES = [%d] ||  DECISION APPROX = [%s], APPROX_DIFFERENCES = [%d]\n";
 
     // Let's remove finished jobs from the schedule
     for (const string & ended_job_id : _jobs_ended_recently){
@@ -360,6 +362,8 @@ void EasyBackfilling3::make_decisions(double date,
                 _exact_diff_count+=1;      
             }
 
+            
+
             if(abs(abs(_tmp_job->est_finish_time) - abs(_tmp_job->real_finish_time)) < 1.0) {
                 _decision_close = true;
             }else{
@@ -367,19 +371,16 @@ void EasyBackfilling3::make_decisions(double date,
                 _close_diff_count+=1;    
             }
 
-            TLOG_F(
-                b_log::TEST, 
-                (double)update_info->current_date, 
-                SRC_FILE, 
-                fmt, 
+            TLOG_F(b_log::TEST,  R2D(update_info->current_date), SRC_FILE, fmt,  
                 _tmp_job->id.c_str(), 
-                _tmp_job->est_finish_time, 
+                _tmp_job->walltime,
+                _tmp_job->start_time,
+                _tmp_job->est_finish_time,
                 _tmp_job->real_finish_time,
                 _decision_exact ? "TRUE" : "FALSE",
                 _exact_diff_count,
                 _decision_close ? "TRUE" : "FALSE",
-                _close_diff_count
-            );
+                _close_diff_count);
         
             // @note LH: remove the finished job 
             running_jobs.erase(j_iter);
@@ -454,7 +455,7 @@ void EasyBackfilling3::make_decisions(double date,
             {
 
                 // @note LH: make_decsions() => if{} => for{} => check_priority_job()
-                // TLOG_F(b_log::TEST, (double)update_info->current_date, SRC_FILE, "LINE: 400 || LOCATION: [make_decisions() => {IF-FOR-IF} => add_job_first_fit()] - (A) || JOB_ID = %s", new_job->id.c_str());
+                // TLOG_F(b_log::TEST, R2D(update_info->current_date), SRC_FILE, "LINE: 400 || LOCATION: [make_decisions() => {IF-FOR-IF} => add_job_first_fit()] - (A) || JOB_ID = %s", new_job->id.c_str());
                 check_priority_job(new_job, date); 
 
 
@@ -488,7 +489,7 @@ void EasyBackfilling3::make_decisions(double date,
             {
 
                 // @note LH: [make_decisions()] => [JOB FINISHED = FALSE] => [NEXT JOB PRIORITY = TRUE]
-                //TLOG_F(b_log::TEST, (double)update_info->current_date, SRC_FILE, "LINE: 440 || LOCATION: [make_decisions() => {ELSE-WHILE-IF} =>  add_job_first_fit()] - (B) || ADD JOB_ID = %s", job->id.c_str());
+                //TLOG_F(b_log::TEST, R2D(update_info->current_date), SRC_FILE, "LINE: 440 || LOCATION: [make_decisions() => {ELSE-WHILE-IF} =>  add_job_first_fit()] - (B) || ADD JOB_ID = %s", job->id.c_str());
                 check_priority_job(job, date);
                 JobAlloc alloc = _schedule.add_job_first_fit(job, _selector);
 
@@ -505,7 +506,7 @@ void EasyBackfilling3::make_decisions(double date,
             {
 
                 // @note LH: [make_decisions()] => [else{} => while{} => else{}] => check_priority_job()
-                //TLOG_F(b_log::TEST, (double)update_info->current_date, SRC_FILE, "LINE: 459 || LOCATION: [make_decisions() => {ELSE-WHILE-ELSE} => add_job_first_fit()] - (C) || ADD JOB_ID = %s", job->id.c_str());
+                //TLOG_F(b_log::TEST, R2D(update_info->current_date), SRC_FILE, "LINE: 459 || LOCATION: [make_decisions() => {ELSE-WHILE-ELSE} => add_job_first_fit()] - (C) || ADD JOB_ID = %s", job->id.c_str());
                 check_priority_job(job, date);
                 JobAlloc alloc = _schedule.add_job_first_fit(job, _selector);
 
@@ -554,14 +555,14 @@ void EasyBackfilling3::sort_queue_while_handling_priority_job(const Job * priori
 
             // @note LH: [sort_queue_while_handling_priority_job()] => [if{} => for{}] => check_priority_job()
             //TLOG_F(b_log::TEST, (double)update_info->current_date, SRC_FILE, "LINE: 511 || LOCATION: [sort_queue_while_handling_priority_job() => {IF-FOR} => add_job_first_fit() || ADD JOB_ID = %s", priority_job_after->id.c_str());
-            check_priority_job(priority_job_after, (double)update_info->current_date);
+            check_priority_job(priority_job_after, R2D(update_info->current_date));
 
             // Let's add the priority job into the schedule
             JobAlloc alloc = _schedule.add_job_first_fit(priority_job_after, _selector);
 
             if (alloc.started_in_first_slice)
             {
-                _decision->add_execute_job(priority_job_after->id, alloc.used_machines, (double)update_info->current_date);
+                _decision->add_execute_job(priority_job_after->id, alloc.used_machines, R2D(update_info->current_date));
                 _queue->remove_job(priority_job_after);
                 priority_job_after = _queue->first_job_or_nullptr();
                 could_run_priority_job = true;
@@ -599,20 +600,19 @@ void EasyBackfilling3::check_priority_job(const Job * next_job, double date)
             return ra->est_finish_time < rb->est_finish_time; 
         });
     }
-
-
     bool can_run = next_job->nb_requested_resources <= unused_machines;
     auto j_iter = find_if(running_jobs.begin(), running_jobs.end(), [&](Running_Job *rj) { 
             return (rj->id == next_job->id);
     });
-    bool job_exists = j_iter != running_jobs.end() ? true : false; 
+    bool job_exists = j_iter != running_jobs.end() ? true : false;
+    double next_job_walltime = R2D(next_job->walltime);
 
     if(job_exists){
         auto j_index = distance(running_jobs.begin(), j_iter);
         _tmp_job = running_jobs.at(j_index);
         if(can_run){
             _tmp_job->start_time = date;
-            _tmp_job->est_finish_time = (double)(date+(double)next_job->walltime);
+            _tmp_job->est_finish_time = date+next_job_walltime;
         }else{
             for(auto & rj: running_jobs){
                 if(rj->id != next_job->id) {
@@ -620,7 +620,7 @@ void EasyBackfilling3::check_priority_job(const Job * next_job, double date)
                     if(machine_count >= next_job->nb_requested_resources){
                         run_after_job_id = rj->id;
                         _tmp_job->start_time = rj->est_finish_time;
-                        _tmp_job->est_finish_time = (double)(_tmp_job->start_time + (double)_tmp_job->walltime);
+                        _tmp_job->est_finish_time = _tmp_job->start_time + _tmp_job->walltime;
                         break;
                     }
                 }
@@ -632,9 +632,9 @@ void EasyBackfilling3::check_priority_job(const Job * next_job, double date)
             _tmp_job->id = next_job->id;
             _tmp_job->requested_resources = next_job->nb_requested_resources;
             _tmp_job->start_time = date;
-            _tmp_job->est_finish_time =(double)(date+(double)next_job->walltime);
+            _tmp_job->est_finish_time = date + next_job_walltime;
             _tmp_job->real_finish_time = 0.0;
-            _tmp_job->walltime = (double)next_job->walltime;
+            _tmp_job->walltime = next_job_walltime;
             running_jobs.push_back(_tmp_job);
         }else{
             for(auto & rj: running_jobs){
@@ -642,7 +642,7 @@ void EasyBackfilling3::check_priority_job(const Job * next_job, double date)
                 if(machine_count >= next_job->nb_requested_resources){
                     run_after_job_id = rj->id;
                     est_start_time = rj->est_finish_time;
-                    est_finish_time = (double)(est_start_time +(double)next_job->walltime);
+                    est_finish_time = est_start_time + next_job_walltime;
                     break;
                 }
             
@@ -658,7 +658,7 @@ void EasyBackfilling3::check_priority_job(const Job * next_job, double date)
         SRC_FILE, 
         can_run ? fmt1+'\n' : fmt1+fmt2+'\n', 
         next_job->id.c_str(), 
-        (double)next_job->walltime,
+        next_job_walltime,
         next_job->nb_requested_resources,
         can_run ? unused_machines : machine_count,
         running_jobs.size(),
