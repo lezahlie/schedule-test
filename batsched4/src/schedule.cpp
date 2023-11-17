@@ -920,6 +920,7 @@ Schedule::ReservedTimeSlice Schedule::reserve_time_slice(const Job* job){
         //now find the end slice
         auto slice_end = second_slice_after_split;
         Rational end_time = job->start + job->walltime;
+        LOG_F(INFO,"DEBUG line 923: end_time = %.15f = start[%f] + walltime[%f]", end_time, job->start, job->walltime);
         //find ending slice
         for (;slice_end!=_profile.end();slice_end++)
         {

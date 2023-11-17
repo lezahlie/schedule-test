@@ -631,7 +631,9 @@ void run(Network & n, ISchedulingAlgorithm * algo, SchedulingDecision & d,
                 //LOG_F(INFO,"line 488 main.cpp");
                 workload[job_id]->completion_time = current_date;
                 //LOG_F(INFO,"line 490 main.cpp");
+                // @note LH: adds jobs to _jobs_ended_recently
                 algo->on_job_end(current_date, {job_id});
+                LOG_F(INFO,"LH: JOB_ID[%s] ENDED @ %.15f", job_id.c_str(), current_date);
                 //LOG_F(INFO,"line 492 main.cpp");
             }
             else if (event_type == "RESOURCE_STATE_CHANGED")

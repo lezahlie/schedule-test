@@ -38,7 +38,7 @@ struct Job
     double dump_time;
     double read_time;
     batsched_tools::checkpoint_job_data * checkpoint_job_data;
-    
+    double duration; // @note LH: added duration (cpu of the job) 
 };
 
 

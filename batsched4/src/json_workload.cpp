@@ -80,7 +80,6 @@ void Workload::add_job_from_json_description_string(const string &json_string, c
     Job * job = job_from_json_description_string(json_string);
     job->id = job_id;
     job->submission_time = submission_time;
-
     // Let's apply the RJMS delay on the job
     job->walltime += _rjms_delay;
 
@@ -134,7 +133,6 @@ Job* Workload::job_from_json_description_string(const string &json_string)
 Job *Workload::job_from_json_object(const Value &object)
 {
     PPK_ASSERT_ERROR(object.IsObject(), "Invalid json object: not an object");
-
     PPK_ASSERT_ERROR(object.HasMember("id"), "Invalid json object: no 'id' member");
     PPK_ASSERT_ERROR(object["id"].IsString(), "Invalid json object: 'id' member is not a string");
     PPK_ASSERT_ERROR(object.HasMember("res"), "Invalid json object: no 'res' member");
@@ -209,7 +207,7 @@ Job *Workload::job_from_json_object(const Value &object)
         j->start = object["start"].GetDouble();
     }
     if (object.HasMember("profile"))
-    {
+    {   
 
     }
     if (object.HasMember("alloc"))
@@ -246,11 +244,14 @@ Job *Workload::job_from_json_object(const Value &object)
     
     return j;
 }
+
 Job *Workload::job_from_json_object(const Value &job_object,const Value &profile_object)
 {
     Job * j = job_from_json_object(job_object);
     
     j->profile = myBatsched::Profile::from_json(j->id,profile_object);
+    // @note LH: Get "duration" time from profile (called cpu in workload)
+    j->duration = profile_object["real_cpu"].GetDouble();
     return j;
 }
 

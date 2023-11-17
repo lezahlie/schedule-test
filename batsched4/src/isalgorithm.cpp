@@ -69,6 +69,7 @@ void ISchedulingAlgorithm::on_job_release(double date, const vector<string> &job
                                    job_ids.end());
 }
 
+// @note LH: inserts when a job ends
 void ISchedulingAlgorithm::on_job_end(double date, const vector<string> &job_ids)
 {
     (void) date;

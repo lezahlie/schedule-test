@@ -73,20 +73,21 @@ protected:
     std::vector<batsched_tools::KILL_TYPES> _on_machine_down_for_repairs;
 
     // @note LH: Added for decision function
-    struct Running_Job
+    struct Scheduled_Job
     {
         std::string id;
         int requested_resources;
+        double wall_time;
         double start_time;
-        double walltime;
+        double run_time;
         double est_finish_time;
         double real_finish_time;
     };
     b_log *_testBLOG;
-    std::vector<Running_Job *> running_jobs;
+    std::vector<Scheduled_Job *> scheduled_jobs;
     bool _decision_exact = false;
     bool _decision_close = false;
     int _exact_diff_count = 0;
     int _close_diff_count = 0;
-    Running_Job * _tmp_job = NULL;
+    Scheduled_Job * _tmp_job = NULL;
 };
