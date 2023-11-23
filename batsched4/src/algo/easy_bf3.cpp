@@ -101,12 +101,12 @@ void EasyBackfilling3::set_machines(Machines *m){
 void EasyBackfilling3::on_machine_down_for_repair(batsched_tools::KILL_TYPES forWhat,double date){
     (void) date;
     auto sort_original_submit_pair = [](const std::pair<const Job *,IntervalSet> j1,const std::pair<const Job *,IntervalSet> j2)->bool{
-            if (j1.first->submission_times[0] == j2.first->submission_times[0])
-                return j1.first->id < j2.first->id;
-            else
-                return j1.first->submission_times[0] < j2.first->submission_times[0];
+        if (j1.first->submission_times[0] == j2.first->submission_times[0])
+            return j1.first->id < j2.first->id;
+        else
+            return j1.first->submission_times[0] < j2.first->submission_times[0];
     };
-   
+
     //get a random number of a machine to kill
     int number = machine_unif_distribution->operator()(generator_machine);
     //make it an intervalset so we can find the intersection of it with current allocations
@@ -126,7 +126,7 @@ void EasyBackfilling3::on_machine_down_for_repair(batsched_tools::KILL_TYPES for
 
     LOG_F(INFO,"here");
     //if the machine is already down for repairs ignore it.
-    //LOG_F(INFO,"repair_machines.size(): %d    nb_avail: %d  avail:%d scheduled_jobs: %d",_repair_machines.size(),_nb_available_machines,_available_machines.size(),_running_jobs.size());
+    //LOG_F(INFO,"repair_machines.size(): %d    nb_avail: %d  avail:%d _scheduled_jobs: %d",_repair_machines.size(),_nb_available_machines,_available_machines.size(),_running_jobs.size());
     //BLOG_F(b_log::FAILURES,"Machine Repair: %d",number);
     if (!added.is_empty())
     {
@@ -305,7 +305,7 @@ void EasyBackfilling3::on_requested_call(double date,int id,batsched_tools::call
                              if (_output_svg == "all")
                                 _schedule.output_to_svg("bottom Repair Done  Machine #: "+std::to_string(id));
                            
-                           //LOG_F(INFO,"in repair_machines.size(): %d nb_avail: %d avail: %d  scheduled_jobs: %d",_repair_machines.size(),_nb_available_machines,_available_machines.size(),_running_jobs.size());
+                           //LOG_F(INFO,"in repair_machines.size(): %d nb_avail: %d avail: %d  _scheduled_jobs: %d",_repair_machines.size(),_nb_available_machines,_available_machines.size(),_running_jobs.size());
                         }
                         break;
             
@@ -328,60 +328,87 @@ void EasyBackfilling3::make_decisions(double date,
                                      SortableJobOrder::CompareInformation *compare_info)
 {
     const Job * priority_job_before = _queue->first_job_or_nullptr();
-    string fmt = "FINISHED_JOB_ID = [%s]: RUN_TIME = [%.15f], START TIME = [%.15f], EST FINISH TIME: [%.15f], REAL FINISH TIME: [%.15f] || DECISION EXACT = [%s], EXACT_DIFFERENCES = [%d] ||  DECISION APPROX = [%s], APPROX_DIFFERENCES = [%d]\n";
-
+    string fmt = "FINISHED_JOB_ID = [%s]: RUN_TIME = [%.15f], START TIME = [%.15f], EST FINISH TIME: [%.15f], REAL FINISH TIME: [%.15f] || FINISH_TIME_DIFF = [%.15f], DIFFERENCE_COUNT = [%d]\n";
     // Let's remove finished jobs from the schedule
     for (const string & ended_job_id : _jobs_ended_recently){
         _schedule.remove_job((*_workload)[ended_job_id]);
-        // @note LH: set finish times in running jobs vector
-        auto j_iter = std::find_if(scheduled_jobs.begin(), scheduled_jobs.end(), [&](Scheduled_Job *sj) { 
+
+
+        // @note LH: get finsihed jobs from scheduler
+        auto j_iter = std::find_if(_scheduled_jobs.begin(), _scheduled_jobs.end(), [&](Scheduled_Job *sj) { 
             return (sj->id == ended_job_id);
         });
         // @note LH: check if finished job exists
-        if (j_iter != scheduled_jobs.end()){
-
-            auto j_index = distance(scheduled_jobs.begin(), j_iter);
-            _tmp_job = scheduled_jobs.at(j_index);
+        if (j_iter != _scheduled_jobs.end()){
+            auto j_index = distance(_scheduled_jobs.begin(), j_iter);
+            _tmp_job = _scheduled_jobs.at(j_index);
 
             // @note LH: set real finish time
             _tmp_job->real_finish_time = date;
 
             // @note check for floating point differences
-            if(_tmp_job->est_finish_time - _tmp_job->real_finish_time == 0.0){
+            _finish_time_diff = fabs(_tmp_job->real_finish_time - _tmp_job->est_finish_time);
+
+            // @note record the difference in a temporary map 
+            _finish_time_diff_map.try_emplace(_tmp_job->id, _finish_time_diff);
+
+
+            // @note get the floating point differences between est and real finish times
+            if(_finish_time_diff == 0.0){
                 _decision_exact = true;
             }else{
                 _decision_exact = false;
                 _exact_diff_count+=1;      
             }
-            // @note check for floating point differences less than epsilon for doubles
-            if(abs(abs(_tmp_job->est_finish_time) - abs(_tmp_job->real_finish_time)) < DBL_EPSILON) {
-                _decision_close = true;
-            }else{
-                _decision_close = false;
-                _close_diff_count+=1;    
-            }
 
+            // @note check for floating point differences less than epsilon for doubles
             auto res_str = batsched_tools::string_format(fmt,
                 _tmp_job->id.c_str(), 
                 _tmp_job->run_time,
                 _tmp_job->start_time,
                 _tmp_job->est_finish_time,
                 _tmp_job->real_finish_time,
-                _decision_exact ? "TRUE" : "FALSE",
-                _exact_diff_count,
-                _decision_close ? "TRUE" : "FALSE",
-                _close_diff_count
+                _finish_time_diff,
+                _exact_diff_count
             );
 
             TLOG_F(b_log::TEST,  update_info->current_date.convert_to<double>(), SRC_FILE, "%s", res_str.c_str());
-        
+
             // @note LH: remove the finished job 
-            scheduled_jobs.erase(j_iter);
+            _scheduled_jobs.erase(j_iter);
         }
+
+        // @note calculating differences and logging
+        if(_finish_time_diff_map.size() == _workload->nb_jobs()){
+
+            double sum_diff = 0.0, avg_diff_all = 0.0, avg_diff_only = 0.0, min_diff = 0.0, max_diff = 0.0;
+
+            for_each(_finish_time_diff_map.begin(),_finish_time_diff_map.end(),[&](const auto &ftd) {
+          
+                if((ftd.second > 0) && (min_diff == 0 || ftd.second < min_diff)){
+                    min_diff = ftd.second;
+                }
+                
+                if(ftd.second > max_diff){
+                    max_diff = ftd.second;
+                } 
+
+                sum_diff += ftd.second;
+            });
+
+            avg_diff_all = sum_diff/_finish_time_diff_map.size();
+            avg_diff_only = sum_diff/_exact_diff_count;
+            TLOG_F(b_log::TEST,
+                update_info->current_date.convert_to<double>(), 
+                SRC_FILE, 
+                "[END_TIME DIFFERENCES]: MIN = %.15f, MAX = %.15f,  AVG(all jobs) = %.15f, AVG(only jobs w/ diff) = %.15f", 
+                min_diff, max_diff, avg_diff_all, avg_diff_only
+            );
+        }
+
         _tmp_job = NULL; // set sj to nothing
     }
     
-
     // Let's handle recently released jobs
     std::vector<std::string> recently_queued_jobs;
     for (const string & new_job_id : _jobs_released_recently)
@@ -446,11 +473,9 @@ void EasyBackfilling3::make_decisions(double date,
                 new_job != priority_job_after &&
                 new_job->nb_requested_resources <= nb_available_machines)
             {
-
                 // @note LH: make_decsions() => if{} => for{} => check_priority_job()
                 // TLOG_F(b_log::TEST, update_info->current_date.convert_to<double>(), SRC_FILE, "LINE: 400 || LOCATION: [make_decisions() => {IF-FOR-IF} => add_job_first_fit()] - (A) || JOB_ID = %s", new_job->id.c_str());
                 check_priority_job(new_job, date); 
-
 
                 JobAlloc alloc = _schedule.add_job_first_fit(new_job, _selector);
                 if ( alloc.started_in_first_slice)
@@ -497,7 +522,6 @@ void EasyBackfilling3::make_decisions(double date,
             }
             else // The job is not priority
             {
-
                 // @note LH: [make_decisions()] => [else{} => while{} => else{}] => check_priority_job()
                 //TLOG_F(b_log::TEST, update_info->current_date.convert_to<double>(), SRC_FILE, "LINE: 459 || LOCATION: [make_decisions() => {ELSE-WHILE-ELSE} => add_job_first_fit()] - (C) || ADD JOB_ID = %s", job->id.c_str());
                 check_priority_job(job, date);
@@ -589,25 +613,25 @@ void EasyBackfilling3::check_priority_job(const Job * next_job, double date)
     can_run = next_job->nb_requested_resources <= unused_nodes;
     // cast walltime to a double
     // sort through the currently running/scheduled jobs
-    sort(scheduled_jobs.begin(), scheduled_jobs.end(), [&](Scheduled_Job * sj_a, Scheduled_Job * sj_b){
+    sort(_scheduled_jobs.begin(), _scheduled_jobs.end(), [&](Scheduled_Job * sj_a, Scheduled_Job * sj_b){
         return sj_a->est_finish_time < sj_b->est_finish_time; 
     });
 
     // check if the next job is already scheduled 
-    auto j_iter = find_if(scheduled_jobs.begin(), scheduled_jobs.end(), [&](Scheduled_Job *sj) { 
+    auto j_iter = find_if(_scheduled_jobs.begin(), _scheduled_jobs.end(), [&](Scheduled_Job *sj) { 
         return (sj->id == next_job->id);
     });
-    job_exists = j_iter != scheduled_jobs.end() ? true : false;
+    job_exists = j_iter != _scheduled_jobs.end() ? true : false;
 
     // if next job exists, set a pointer to it, else create a new job object
     if(job_exists){
-        auto j_index = distance(scheduled_jobs.begin(), j_iter);
-        _tmp_job = scheduled_jobs.at(j_index);
+        auto j_index = distance(_scheduled_jobs.begin(), j_iter);
+        _tmp_job = _scheduled_jobs.at(j_index);
     }else _tmp_job = new Scheduled_Job();
 
     /*
         checks if the next job can run right now:
-            can run: add job to scheduled_jobs vector or update est. times if job exists
+            can run: add job to _scheduled_jobs vector or update est. times if job exists
             cannot run: predict the next time it can, update est. times if job exists
     */ 
     if(can_run){
@@ -619,10 +643,10 @@ void EasyBackfilling3::check_priority_job(const Job * next_job, double date)
             _tmp_job->real_finish_time = 0.0;
             _tmp_job->wall_time = next_job->walltime.convert_to<double>();
             _tmp_job->run_time = next_job->duration;
-            scheduled_jobs.push_back(_tmp_job);
+            _scheduled_jobs.push_back(_tmp_job);
         }
     }else{
-        for(auto & sj: scheduled_jobs){
+        for(auto & sj: _scheduled_jobs){
             if(sj->id != next_job->id) continue;
             node_count += sj->requested_resources;
             if(node_count >= next_job->nb_requested_resources){
@@ -647,7 +671,7 @@ void EasyBackfilling3::check_priority_job(const Job * next_job, double date)
         next_job_walltime,
         next_job->nb_requested_resources,
         can_run ? unused_machines : machine_count,
-        scheduled_jobs.size(),
+        _scheduled_jobs.size(),
         next_job->id.c_str(), 
         can_run ? "TRUE" : "FALSE", 
         job_exists ? _tmp_job->start_time : est_start_time, 

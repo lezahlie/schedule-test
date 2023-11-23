@@ -68,7 +68,6 @@ protected:
     b_log *_myBLOG;
     std::map<std::string,batsched_tools::KILL_TYPES>_resubmitted_jobs;
     std::vector<std::pair<const Job *,batsched_tools::KILL_TYPES>>_resubmitted_jobs_released;
-    
     std::vector<batsched_tools::KILL_TYPES> _on_machine_instant_down_ups;
     std::vector<batsched_tools::KILL_TYPES> _on_machine_down_for_repairs;
 
@@ -83,11 +82,15 @@ protected:
         double est_finish_time;
         double real_finish_time;
     };
+
     b_log *_testBLOG;
-    std::vector<Scheduled_Job *> scheduled_jobs;
+    std::vector<Scheduled_Job *> _scheduled_jobs;
+    std::map<std::string,double> _finish_time_diff_map;
+    Scheduled_Job * _tmp_job = NULL;
+
     bool _decision_exact = false;
     bool _decision_close = false;
     int _exact_diff_count = 0;
     int _close_diff_count = 0;
-    Scheduled_Job * _tmp_job = NULL;
+    double _finish_time_diff = 0.0;
 };
