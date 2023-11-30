@@ -372,7 +372,7 @@ void EasyBackfilling3::make_decisions(double date,
                 _exact_diff_count
             );
 
-            TLOG_F(b_log::TEST,  update_info->current_date.convert_to<double>(), SRC_FILE, "%s", res_str.c_str());
+            //TLOG_F(b_log::TEST,  update_info->current_date.convert_to<double>(), SRC_FILE, "%s", res_str.c_str());
 
             // @note LH: remove the finished job 
             _scheduled_jobs.erase(j_iter);
@@ -382,27 +382,48 @@ void EasyBackfilling3::make_decisions(double date,
         if(_finish_time_diff_map.size() == _workload->nb_jobs()){
 
             double sum_diff = 0.0, avg_diff_all = 0.0, avg_diff_only = 0.0, min_diff = 0.0, max_diff = 0.0;
+            int loop_count = 1, diff_count_range = 0, range = 10000;
+            double sum_diff_range = 0.0, min_diff_range = 0.0, max_diff_range = 0.0, avg_diff_all_range = 0.0, avg_diff_only_range = 0.0;
 
             for_each(_finish_time_diff_map.begin(),_finish_time_diff_map.end(),[&](const auto &ftd) {
-          
-                if((ftd.second > 0) && (min_diff == 0 || ftd.second < min_diff)){
-                    min_diff = ftd.second;
-                }
                 
-                if(ftd.second > max_diff){
-                    max_diff = ftd.second;
-                } 
-
+                // get overall max, min, summed diffs
+                if((ftd.second > 0) && (min_diff == 0 || ftd.second < min_diff)) min_diff = ftd.second;
+                if(ftd.second > max_diff) max_diff = ftd.second;
                 sum_diff += ftd.second;
+                
+                // get job range min, max, diff count, summed diffs
+                if((ftd.second > 0) && (min_diff_range == 0 || ftd.second < min_diff_range)) min_diff_range = ftd.second;
+                if(ftd.second > max_diff_range) max_diff_range = ftd.second;
+                if(ftd.second > 0) diff_count_range+=1;
+                sum_diff_range += ftd.second;
+
+                if(loop_count % range == 0){
+                    avg_diff_all_range = sum_diff_range/range;
+                    avg_diff_only_range = sum_diff_range/diff_count_range;
+                    TLOG_F(b_log::TEST,
+                        update_info->current_date.convert_to<double>(), 
+                        SRC_FILE, 
+                        "[SECTIONED EST. END_TIME DIFFERENCES]: JOB RANGE = [%d, %d], TOTAL JOBS = %d, TOTAL DIFFS = %d, MINIMUM DIFF = %.15f, MAXIMUM DIFF = %.15f, AVG DIFF(all jobs) = %.15f, AVG DIFF(diff only) = %.15f",
+                        (loop_count-range), range, range, diff_count_range, min_diff_range, max_diff_range, avg_diff_all_range, avg_diff_only_range
+                    );
+                    min_diff_range = 0.0;
+                    max_diff_range = 0.0;
+                    sum_diff_range = 0.0;
+                    diff_count_range = 0;
+                }
+                loop_count+=1;
             });
 
             avg_diff_all = sum_diff/_finish_time_diff_map.size();
             avg_diff_only = sum_diff/_exact_diff_count;
+
+
             TLOG_F(b_log::TEST,
                 update_info->current_date.convert_to<double>(), 
                 SRC_FILE, 
-                "[END_TIME DIFFERENCES]: MIN = %.15f, MAX = %.15f,  AVG(all jobs) = %.15f, AVG(only jobs w/ diff) = %.15f", 
-                min_diff, max_diff, avg_diff_all, avg_diff_only
+                "[OVERALL EST. END_TIME DIFFERENCES]: TOTAL JOBS = %d, TOTAL DIFFS = %d, MINIMUM DIFF = %.15f, MAXIMUM DIFF = %.15f, AVG DIFF(all jobs) = %.15f, AVG DIFF(diff only) = %.15f", 
+                _workload->nb_jobs(), _exact_diff_count, min_diff, max_diff, avg_diff_all, avg_diff_only
             );
         }
 
