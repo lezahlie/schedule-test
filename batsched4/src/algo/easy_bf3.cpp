@@ -13,7 +13,7 @@ using namespace std;
 // @note LH: testing macros
 #define T_LOG_INSTANCE _testBLOG
 #define SRC_FILE "easy_bf3.cpp"
-#define RANGE 5000
+
 
 
 EasyBackfilling3::EasyBackfilling3(Workload * workload,
@@ -151,7 +151,7 @@ void EasyBackfilling3::on_machine_down_for_repair(batsched_tools::KILL_TYPES for
             _schedule.get_jobs_running_on_machines(machine,jobs_to_kill);
             
             std::string jobs_to_kill_str = !(jobs_to_kill.empty())? std::accumulate( /* otherwise, accumulate */
-            ++jobs_to_kill.begin(), jobs_to_kill.end(), /* the RANGE 2nd to after-last */
+            ++jobs_to_kill.begin(), jobs_to_kill.end(), /* the range 2nd to after-last */
             *jobs_to_kill.begin(), /* and start accumulating with the first item */
             [](auto& a, auto& b) { return a + "," + b; }) : "";
 
@@ -666,7 +666,7 @@ void EasyBackfilling3::analyze_endtime_diffs(double date){
     // temporary variables to compute the std
     double job_std_final = 0.0, diff_std_final = 0.0;
     // counters and temp range varaible
-    int job_counter = 1, range_counter = 0, range_diff_count = 0;
+    int job_counter = 1, range_counter = 0, range_diff_count = 0, range = _workload->nb_jobs()/10;
 
     // finds the sum of differences for all jobs and ranges of jobs
     for_each(_finish_time_diff_map.begin(),_finish_time_diff_map.end(),[&](const auto &ftd) {
@@ -680,10 +680,10 @@ void EasyBackfilling3::analyze_endtime_diffs(double date){
         }
 
         // check if the current range has been iterated
-        if(job_counter % RANGE == 0){
+        if(job_counter % range == 0){
 
             // calculate the avg diffs for both all jobs and diffs only
-            range_job_avg = range_sum/RANGE;
+            range_job_avg = range_sum/range;
             range_diff_avg = range_sum/range_diff_count;
 
             // record avgs and diff counts in temp vectors
@@ -726,20 +726,20 @@ void EasyBackfilling3::analyze_endtime_diffs(double date){
         }
 
         // check if the current range has been iterated
-        if(job_counter % RANGE == 0){
+        if(job_counter % range == 0){
 
             // finds the overall min and max differences with the ranged min and max (less work)
             if(overall_min == 0 || range_min < overall_min) overall_min = range_min;
             if(range_max > overall_max) overall_max = range_max;
-            // calculate the actual diff std of the current RANGE for both all jobs and diffs only
-            job_std_final = sqrt(range_job_variance/RANGE);
-            diff_std_final = sqrt(range_diff_variance/_diff_count_by_range[range_counter]);
+            // calculate the actual diff std of the current range for both all jobs and diffs only
+            job_std_final = sqrt(range_job_variance/(range-1));
+            diff_std_final = sqrt(range_diff_variance/(_diff_count_by_range[range_counter]-1));
 
             TLOG_F(b_log::TEST,
                 date, 
                 SRC_FILE, 
-                "[SECTIONED END_TIME DIFFS]: JOB RANGE = (%d, %d), TOTAL DIFFS = %d, MINIMUM = %.15f, MAXIMUM = %.15f || [ALL JOBS]: AVG = %.15f, STD = %.15f || [DIFFS ONLY]:  AVG  = %.15f, STD = %.15f",
-                (job_counter-RANGE), job_counter, _diff_count_by_range[range_counter], range_min, range_max, range_job_avg, job_std_final, range_diff_avg, diff_std_final
+                "[SECTIONED END_TIME DIFFS]: JOB range = (%d, %d), TOTAL DIFFS = %d, MINIMUM = %.15f, MAXIMUM = %.15f || [ALL JOBS]: AVG = %.15f, STD = %.15f || [DIFFS ONLY]:  AVG  = %.15f, STD = %.15f",
+                (job_counter-range), job_counter, _diff_count_by_range[range_counter], range_min, range_max, range_job_avg, job_std_final, range_diff_avg, diff_std_final
             );
 
             // reset all variables calculated for the next range
@@ -753,8 +753,8 @@ void EasyBackfilling3::analyze_endtime_diffs(double date){
     });
 
     // calculate the actual diff std of all jobs for both all jobs and diffs only
-    job_std_final = sqrt(overall_job_avg/_workload->nb_jobs());
-    diff_std_final = sqrt(overall_diff_avg/_exact_diff_count);
+    job_std_final = sqrt(overall_job_avg/(_workload->nb_jobs()-1));
+    diff_std_final = sqrt(overall_diff_avg/(_exact_diff_count-1));
 
     TLOG_F(b_log::TEST,
         date, 
