@@ -40,6 +40,7 @@ public:
     
     // @note LH: decision function declaration
     void check_priority_job(const Job * next_job, double date);
+    void analyze_endtime_diffs(double date);
 
 protected:
     Schedule _schedule;
@@ -86,11 +87,14 @@ protected:
     b_log *_testBLOG;
     std::vector<Scheduled_Job *> _scheduled_jobs;
     std::map<std::string,double> _finish_time_diff_map;
+    std::vector<double> _avg_only_diffs_by_range;
+    std::vector<double> _avg_all_jobs_by_range;
+    std::vector<int> _diff_count_by_range;
     Scheduled_Job * _tmp_job = NULL;
 
     bool _decision_exact = false;
     bool _decision_close = false;
     int _exact_diff_count = 0;
-    int _close_diff_count = 0;
     double _finish_time_diff = 0.0;
+    
 };
