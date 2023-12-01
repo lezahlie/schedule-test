@@ -115,7 +115,6 @@ int execute_task(BatTask * btask,
 
     if (profile->is_parallel_task())
     {
-        // @note LH:  execute_parallel_task, issue w/ remaining time
         int return_code = execute_parallel_task(btask, allocation, remaining_time,
                                                         context);
             
@@ -464,9 +463,6 @@ void execute_job_process(BatsimContext * context,
     job->starting_time = static_cast<long double>(simgrid::s4u::Engine::get_clock());
     job->allocation = allocation->machine_ids;
     double remaining_time = static_cast<double>(job->walltime);
-    // @note adding for sanity like wtf is happening
-    XBT_ERROR("Job Id [%s]: remaining_time =  %.15f\n", job->id.to_cstring(), remaining_time);
-
 
     // Create the root task
     job->task = initialize_sequential_tasks(job, job->profile, io_profile);

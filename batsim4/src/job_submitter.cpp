@@ -304,7 +304,6 @@ static string submit_workflow_task_as_job(BatsimContext *context, string workflo
     context->workloads.at(workload_name)->profiles->add_profile(profile_name, profile);
 
     // Create JSON description of Job corresponding to Task
-    // @note wall time set here
     double walltime = task->execution_time + 10.0;
     string job_json_description = std::string() + "{" +
             "\"id\": \"" + workload_name + "!" + job_number +  "\", " +

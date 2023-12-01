@@ -57,8 +57,6 @@ def generate_workload(input_swf, output_json, computation_speed,
             submit_time = max(0, float(res.group(SwfField.SUBMIT_TIME.value)))
             walltime = max(job_walltime_factor * run_time,
                            float(res.group(SwfField.REQUESTED_TIME.value)))
-            # @note LH: added for sanity to see the "runtime"
-            print(f'LOOK >>> swf_to_batsim_workload_compute_only.py || job_id = {job_id} || walltime = {walltime} = MAX[ (job_walltime_factor[{job_walltime_factor}] * run_time{run_time}), requested_time={float(res.group(SwfField.REQUESTED_TIME.value))} ] ')
             # nb_res may be changed by calling a user-given function
             nb_res = eval(job_size_function_string)
 

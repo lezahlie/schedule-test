@@ -22,7 +22,6 @@ class Job:
         self.run_time = run_time
         self.submit_time = submit_time
         self.wall_time = wall_time
-        # @note LH: SETTING START TIME
         self.start_time = self.submit_time + self.wait_time
         self.finish_time = self.start_time + self.run_time
         self.turnaround_time = self.finish_time - self.submit_time
