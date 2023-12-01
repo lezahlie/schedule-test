@@ -753,8 +753,8 @@ void EasyBackfilling3::analyze_endtime_diffs(double date){
     });
 
     // calculate the actual diff std of all jobs for both all jobs and diffs only
-    job_std_final = sqrt(overall_job_avg/(_workload->nb_jobs()-1));
-    diff_std_final = sqrt(overall_diff_avg/(_exact_diff_count-1));
+    job_std_final = sqrt(overall_job_avg/_workload->nb_jobs());
+    diff_std_final = sqrt(overall_diff_avg/_exact_diff_count);
 
     TLOG_F(b_log::TEST,
         date, 
