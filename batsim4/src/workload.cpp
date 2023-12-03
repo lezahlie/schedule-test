@@ -756,7 +756,6 @@ bool Workload::write_out_batsim_checkpoint(const std::string checkpoint_dir)
                                                                 "\"com\":%f"
                                                                 "}", type.c_str(),cpuDelay,realCpuDelay,originalCpuDelay,originalRealCpuDelay,com);
                     //ok progressTimeCpu is an amount of flops, convert it to time first
-                    // @note LH: -_- SETS NEW WALL TIME 
                     newWallTime = pair.second->walltime - (progressTimeCpu/this->_speed);
 
                 }

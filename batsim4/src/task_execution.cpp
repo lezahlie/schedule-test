@@ -664,14 +664,10 @@ int execute_parallel_task(BatTask * btask,
     {
         double time_before_execute = simgrid::s4u::Engine::get_clock();
         XBT_DEBUG("Executing task '%s' with walltime of %g", task_name.c_str(), *remaining_time);
-        // @note LH: added for sanity 1
-        XBT_ERROR("Executing Task '%s' with walltime = %.15f", task_name.c_str(), *remaining_time);
         try
         {
             ptask->start();
             ptask->wait_for(*remaining_time);
-             // @note LH: added for sanity 2
-            XBT_ERROR("Task '%s' waiting for walltime = %.15f", task_name.c_str(), *remaining_time);
         }
         catch (const simgrid::TimeoutException &)
         {
@@ -686,15 +682,10 @@ int execute_parallel_task(BatTask * btask,
         }
  
         *remaining_time = *remaining_time - (simgrid::s4u::Engine::get_clock() - time_before_execute);
-        // @note LH: added for sanity 3
-        XBT_ERROR("Task '%s' remaining walltime =  %g", task_name.c_str(), *remaining_time);
     }
 
     XBT_DEBUG("Task '%s' finished in %.15f", task_name.c_str(),
         simgrid::s4u::Engine::get_clock() - time_start);
-
-    // @note LH: added for sanity 4
-    XBT_ERROR("Task '%s' finished with runtime = %.15f", task_name.c_str(), simgrid::s4u::Engine::get_clock() - time_start);
 
     return ret;
 }

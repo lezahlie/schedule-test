@@ -262,7 +262,6 @@ void server_on_job_completed(ServerData * data,
     xbt_assert(data->nb_running_jobs >= 0, "inconsistency: no jobs are running");
     data->nb_completed_jobs++;
     xbt_assert(data->nb_completed_jobs + data->nb_running_jobs <= data->nb_submitted_jobs, "inconsistency: nb_completed_jobs + nb_running_jobs > nb_submitted_jobs");
-    // @note LH: job with a runtime from a "message"
     auto job = message->job;
 
     XBT_INFO("Job %s has COMPLETED. %d jobs completed so far",
@@ -276,43 +275,6 @@ void server_on_job_completed(ServerData * data,
 
     XBT_ERROR("%d jobs ACTUALLY completed so far. real_time: %s, queue_size: %d, schedule_size: %d",(data->nb_completed_jobs - data->nb_killed_jobs ),real_time.c_str(),data->context->queue_size,data->context->schedule_size);
     
-    // @note LH: added for sanity checking 
-
-    double casted_starttime = static_cast<double>(job->starting_time),casted_walltime = static_cast<double>(job->walltime), casted_runtime = static_cast<double>(job->runtime);
-    double finish_runtime = (casted_starttime + casted_runtime), finish_walltime = (casted_starttime + casted_walltime);
-    XBT_ERROR("Job [%s]: start_time = %.15f, wall_time = %.15f, run_time = %.15f, (start_time + wall_time)= %.15f, (start_time + run_time) = %.15f\n",
-        job->id.to_cstring(), casted_starttime, casted_walltime, casted_runtime, finish_walltime, finish_runtime);
-    
-    /*
-    XBT_ERROR("Job [%s]: (LONG DOUBLES) > job->starting_time = %.15Lf, job->walltime = %.15Lf, job->runtime = %.15Lf",
-        job->id.to_cstring(),job->starting_time,  job->walltime, job->runtime);
-
-    double casted_starttime = static_cast<double>(job->starting_time);
-    double casted_walltime = static_cast<double>(job->walltime);   
-    double casted_runtime = static_cast<double>(job->runtime);    
-
-    XBT_ERROR("Job [%s]: (LONG DOUBLE => DOUBLE) > casted_starttime = %.15f, casted_walltime = %.15f, casted_runtime = %.15f",
-        job->id.to_cstring(), casted_starttime, casted_walltime, casted_runtime);
-    
-    long double ld_finish_walltime = job->starting_time+job->walltime;
-    long double ld_finish_runtime = job->starting_time+job->runtime;
-
-    XBT_ERROR("[ADDED LONG DOUBLES]: (job->starting_time + job->walltime) = %.15Lf, (job->starting_time + job->runtime) = %.15Lf",
-        ld_finish_walltime, ld_finish_runtime);
-    
-    double ald_finish_walltime = static_cast<double>(job->starting_time+job->walltime);
-    double ald_finish_runtime = static_cast<double>(job->starting_time+job->runtime);
-
-    XBT_ERROR("[ADDED LONG DOUBLES => CONVERTED TO DOUBLE]: static_cast<double>(job->starting_time+job->walltime) = %.15f, static_cast<double>(job->starting_time+job->runtime) = %.15f",
-        ald_finish_walltime, ald_finish_runtime);
-
-    double ad_finish_walltime = casted_starttime+casted_walltime;
-    double ad_finish_runtime = casted_starttime+casted_runtime;
-
-    XBT_ERROR("[CONVERTED TO DOUBLES => ADDED DOUBLES]: (starting_time + walltime) = %.15f, (starting_time + runtime) = %.15f\n",
-        ad_finish_walltime, ad_finish_runtime);
-    */
-
     if (data->context->output_extra_info)
     {
         

@@ -543,7 +543,6 @@ JobPtr Job::from_json(const rapidjson::Value & json_desc,
        
         j->submission_times.push_back(j->submission_time);
     }
-    // @note LH: gets wall time from json 
     // Get walltime (optional)
     if (!json_desc.HasMember("walltime"))
     {
