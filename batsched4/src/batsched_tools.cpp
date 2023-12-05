@@ -11,14 +11,17 @@
 b_log::b_log(){
 
 }
+
 b_log::~b_log(){
  for (auto key_value:_files)
     fclose(key_value.second);
 }
+
 void b_log::add_log_file(std::string file,logging_type type){
     FILE* myFile=fopen(file.c_str(),"w");
     _files[type]=myFile;
 }
+
 void b_log::blog(logging_type type, std::string fmt, double date, ...){
     
     if (_files.size() > 0 && _files.find(type) != _files.end()){
@@ -30,10 +33,25 @@ void b_log::blog(logging_type type, std::string fmt, double date, ...){
         std::vfprintf(file,fmt.c_str(),args);
         va_end(args);
     }
+
+}
+
+// @note LH: added for testing logs
+void b_log::test_csv(logging_type type, double date, std::string fmt, ...){
+    
+    if (_files.size() > 0 && _files.find(type) != _files.end()){
+        va_list args;
+        va_start(args, date);
+        FILE* file = _files[type];       
+        fmt=fmt + "\n";                                                                                                                                                    
+        std::vfprintf(file,fmt.c_str(),args);
+        va_end(args);
+    }
     
 }
 
-//@note LH added for tetsing logs
+
+// @note LH: added for testing logs
 void b_log::test_blog(logging_type type, double date, std::string src_file, std::string fmt, ...){
     
     if (_files.size() > 0 && _files.find(type) != _files.end()){

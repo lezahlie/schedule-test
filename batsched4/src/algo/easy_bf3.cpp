@@ -12,6 +12,7 @@ using namespace std;
 
 // @note LH: testing macros
 #define T_LOG_INSTANCE _testBLOG
+#define T_CSV_INSTANCE _testCSV
 #define SRC_FILE "easy_bf3.cpp"
 
 
@@ -27,8 +28,14 @@ EasyBackfilling3::EasyBackfilling3(Workload * workload,
         //initialize reservation queue
     SortableJobOrder * order = new FCFSOrder;//reservations do not get killed so we do not need OriginalFCFSOrder for this
     _reservation_queue = new Queue(order);
-    // @note LH: test log file
-    _testBLOG = new b_log();
+
+    /* 
+        // @note LH: test log file
+        _testBLOG = new b_log();
+    */
+
+      // @note LH: test csv file
+    _testCSV = new b_log();
 }
 
 EasyBackfilling3::~EasyBackfilling3()
@@ -51,15 +58,21 @@ void EasyBackfilling3::on_simulation_start(double date, const rapidjson::Value &
     LOG_F(INFO,"output svg %s",_output_svg.c_str());
     
     _output_folder=batsim_config["output-folder"].GetString();
-    
     _output_folder.replace(_output_folder.rfind("/out"), std::string("/out").size(), "");
     
     LOG_F(INFO,"output folder %s",_output_folder.c_str());
     
-    // @note LH: create log file for testing
-    _testBLOG->add_log_file(_output_folder+"/log/test_jobs.log",b_log::TEST);
-    TLOG_F(b_log::TEST, date, SRC_FILE, "Test log for easybf_3");
+    /*
+        // @note LH: create log file for testing
+        _testBLOG->add_log_file(_output_folder+"/log/test_jobs.log",b_log::TEST);
+        TLOG_F(b_log::TEST, date, SRC_FILE, "Test log for easybf_3");
+    */
 
+
+    // @note LH: create csv file for analyzing end time diffs
+    _testCSV->add_log_file(_output_folder+"/out_endtime_diffs.csv",b_log::CSV);
+    string header_fmt = "JOB_ID, START_TIME, RUN_TIME, EST_END_TIME, REAL_END_TIME";
+    TCSV_F(b_log::CSV, date, "%s", header_fmt.c_str());
 
     Schedule::convert_policy(batsim_config["reschedule-policy"].GetString(),_reschedule_policy);
     Schedule::convert_policy(batsim_config["impact-policy"].GetString(),_impact_policy);
@@ -92,7 +105,9 @@ void EasyBackfilling3::on_simulation_start(double date, const rapidjson::Value &
 
 void EasyBackfilling3::on_simulation_end(double date)
 {
-    analyze_endtime_diffs(date);
+    // analyze_endtime_diffs(date);
+    //  @note show total backfilled jobs
+    LOG_F(ERROR,"[TOTAL_BACKFILLED_JOBS] = %d", _backfill_counter);
     (void) date;
     
 }
@@ -331,7 +346,11 @@ void EasyBackfilling3::make_decisions(double date,
                                      SortableJobOrder::CompareInformation *compare_info)
 {
     const Job * priority_job_before = _queue->first_job_or_nullptr();
-    string fmt = "FINISHED_JOB_ID = [%s]: RUN_TIME = [%.15f], START TIME = [%.15f], EST FINISH TIME: [%.15f], REAL FINISH TIME: [%.15f] || FINISH_TIME_DIFF = [%.15f], DIFFERENCE_COUNT = [%d]\n";
+
+    // @note LH: added fmt string for test log and csv
+    // string log_fmt = "FINISHED_JOB_ID = [%s]: START TIME = [%.15f], RUN_TIME = [%.15f], EST FINISH TIME: [%.15f], REAL FINISH TIME: [%.15f] || FINISH_TIME_DIFF = [%.15f], DIFFERENCE_COUNT = [%d]\n";
+    string row_fmt = "%s, %.15f, %.15f, %.15f, %.15f";
+
     // Let's remove finished jobs from the schedule
     for (const string & ended_job_id : _jobs_ended_recently){
         _schedule.remove_job((*_workload)[ended_job_id]);
@@ -349,33 +368,42 @@ void EasyBackfilling3::make_decisions(double date,
             // @note LH: set real finish time
             _tmp_job->real_finish_time = date;
 
-            // @note check for floating point differences
-            _finish_time_diff = fabs(_tmp_job->real_finish_time - _tmp_job->est_finish_time);
+            /*
+                // @note check for floating point differences
+                _finish_time_diff = fabs(_tmp_job->real_finish_time - _tmp_job->est_finish_time);
 
-            // @note record the difference in a temporary map 
-            _finish_time_diff_map.try_emplace(_tmp_job->id, _finish_time_diff);
+                // @note record the difference in a temporary map 
+                _finish_time_diff_map.try_emplace(_tmp_job->id, _finish_time_diff);
 
+                // @note get the floating point differences between est and real finish times
+                if(_finish_time_diff == 0.0){
+                    _decision_exact = true;
+                }else{
+                    _decision_exact = false;
+                    _exact_diff_count+=1;      
+                }
 
-            // @note get the floating point differences between est and real finish times
-            if(_finish_time_diff == 0.0){
-                _decision_exact = true;
-            }else{
-                _decision_exact = false;
-                _exact_diff_count+=1;      
-            }
+                auto log_str = batsched_tools::string_format(log_fmt,
+                    _tmp_job->id.c_str(), 
+                    _tmp_job->start_time,
+                    _tmp_job->run_time,
+                    _tmp_job->est_finish_time,
+                    _tmp_job->real_finish_time,
+                    _finish_time_diff,
+                    _exact_diff_count
+                );
+                TLOG_F(b_log::TEST, update_info->current_date.convert_to<double>(), SRC_FILE, "%s", log_str.c_str());
+            */
 
-            // @note check for floating point differences less than epsilon for doubles
-            auto res_str = batsched_tools::string_format(fmt,
+            // @note LH: print csv row to output csv
+            auto row_str = batsched_tools::string_format(row_fmt,
                 _tmp_job->id.c_str(), 
-                _tmp_job->run_time,
                 _tmp_job->start_time,
+                _tmp_job->run_time,
                 _tmp_job->est_finish_time,
-                _tmp_job->real_finish_time,
-                _finish_time_diff,
-                _exact_diff_count
+                _tmp_job->real_finish_time
             );
-
-            //TLOG_F(b_log::TEST,  update_info->current_date.convert_to<double>(), SRC_FILE, "%s", res_str.c_str());
+            TCSV_F(b_log::CSV, date, "%s", row_str.c_str());
 
             // @note LH: remove the finished job 
             _scheduled_jobs.erase(j_iter);
@@ -449,8 +477,8 @@ void EasyBackfilling3::make_decisions(double date,
                 new_job != priority_job_after &&
                 new_job->nb_requested_resources <= nb_available_machines)
             {
+
                 // @note LH: make_decsions() => if{} => for{} => check_priority_job()
-                // TLOG_F(b_log::TEST, update_info->current_date.convert_to<double>(), SRC_FILE, "LINE: 400 || LOCATION: [make_decisions() => {IF-FOR-IF} => add_job_first_fit()] - (A) || JOB_ID = %s", new_job->id.c_str());
                 check_priority_job(new_job, date); 
 
                 JobAlloc alloc = _schedule.add_job_first_fit(new_job, _selector);
@@ -459,6 +487,7 @@ void EasyBackfilling3::make_decisions(double date,
                     _decision->add_execute_job(new_job_id, alloc.used_machines, date);
                     _queue->remove_job(new_job);
                     nb_available_machines -= new_job->nb_requested_resources;
+                    _backfill_counter++;
                 }
                 else
                     _schedule.remove_job(new_job);
@@ -492,14 +521,14 @@ void EasyBackfilling3::make_decisions(double date,
                     _decision->add_execute_job(job->id, alloc.used_machines, date);
                     job_it = _queue->remove_job(job_it); // Updating job_it to remove on traversal
                     priority_job_after = _queue->first_job_or_nullptr();
+                    _backfill_counter++;
                 }
                 else
                     ++job_it;
             }
             else // The job is not priority
             {
-                // @note LH: [make_decisions()] => [else{} => while{} => else{}] => check_priority_job()
-                //TLOG_F(b_log::TEST, update_info->current_date.convert_to<double>(), SRC_FILE, "LINE: 459 || LOCATION: [make_decisions() => {ELSE-WHILE-ELSE} => add_job_first_fit()] - (C) || ADD JOB_ID = %s", job->id.c_str());
+                // @note LH: checks non priority jobs 
                 check_priority_job(job, date);
                 JobAlloc alloc = _schedule.add_job_first_fit(job, _selector);
 
@@ -507,6 +536,7 @@ void EasyBackfilling3::make_decisions(double date,
                 {
                     _decision->add_execute_job(job->id, alloc.used_machines, date);
                     job_it = _queue->remove_job(job_it);
+                    _backfill_counter++;
                 }
                 else
                 {
@@ -516,6 +546,14 @@ void EasyBackfilling3::make_decisions(double date,
             }
         }
     }
+
+    // @note LH: adds queuing info to the out_jobs_extra.csv file
+    _decision->add_generic_notification("queue_size",std::to_string(_queue->nb_jobs()),date);
+    _decision->add_generic_notification("schedule_size",std::to_string(_schedule.size()),date);
+    _decision->add_generic_notification("number_running_jobs",std::to_string(_schedule.get_number_of_running_jobs()),date);
+    _decision->add_generic_notification("utilization",std::to_string(_schedule.get_utilization()),date);
+    _decision->add_generic_notification("utilization_no_resv",std::to_string(_schedule.get_utilization_no_resv()),date);
+
 }
 
 
@@ -546,8 +584,7 @@ void EasyBackfilling3::sort_queue_while_handling_priority_job(const Job * priori
         {
             could_run_priority_job = false;
 
-            // @note LH: [sort_queue_while_handling_priority_job()] => [if{} => for{}] => check_priority_job()
-            //TLOG_F(b_log::TEST, (double)update_info->current_date, SRC_FILE, "LINE: 511 || LOCATION: [sort_queue_while_handling_priority_job() => {IF-FOR} => add_job_first_fit() || ADD JOB_ID = %s", priority_job_after->id.c_str());
+            // @note LH: (1) Initial scheduling of jobs
             check_priority_job(priority_job_after, update_info->current_date.convert_to<double>());
 
             // Let's add the priority job into the schedule
@@ -657,6 +694,9 @@ void EasyBackfilling3::check_priority_job(const Job * next_job, double date)
     */
 }
 
+/* 
+// @note LH: function to analyze end_time differences
+
 void EasyBackfilling3::analyze_endtime_diffs(double date){
 
     // variables to calculate min, max, sum, avgs, and std for all jobs
@@ -764,3 +804,6 @@ void EasyBackfilling3::analyze_endtime_diffs(double date){
     );
 
 }
+
+*/
+

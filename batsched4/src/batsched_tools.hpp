@@ -18,22 +18,27 @@ struct Job;
 
 #define BLOG_F(log_type,fmt,...) B_LOG_INSTANCE->blog(log_type,fmt,date,## __VA_ARGS__)
 
-// @note LH added for testing
+// @note LH: personal testing log
 #define TLOG_F(log_type,date, srcfile, fmt,...) T_LOG_INSTANCE->test_blog(log_type, date, srcfile, fmt, ## __VA_ARGS__)
+
+// @note LH: printing csv files
+#define TCSV_F(log_type, date, fmt,...) T_CSV_INSTANCE->test_csv(log_type, date, fmt, ## __VA_ARGS__)
 
 class b_log{
     
 public:
 b_log();
 ~b_log();
-// @note LH added log type TEST
-enum logging_type{FAILURES, TEST};
+// @note LH: added log types: TEST, CSV
+enum logging_type{FAILURES, TEST, CSV};
 const char * logging_types = {"FAILURES"};
 void blog(logging_type type,std::string fmt, double date,...);
 void add_log_file(std::string file, logging_type type);
 std::unordered_map<logging_type,FILE*> _files;
-// @note LH added for testing
+// @note LH: personal testing log
 void test_blog(logging_type type, double date, std::string src_file, std::string fmt, ...);
+// @note LH: printing csv files
+void test_csv(logging_type type, double date, std::string fmt, ...);
 };
 
 
