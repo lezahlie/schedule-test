@@ -71,7 +71,7 @@ void EasyBackfilling3::on_simulation_start(double date, const rapidjson::Value &
 
     // @note LH: create csv file for analyzing end time diffs
     _testCSV->add_log_file(_output_folder+"/out_endtime_diffs.csv",b_log::CSV);
-    string header_fmt = "JOB_ID,QUEUE_SIZE,START_TIME,RUN_TIME,EST_END_TIME,REAL_END_TIME";
+    string header_fmt = "JOB_ID,START_TIME,RUN_TIME,EST_END_TIME,REAL_END_TIME";
     TCSV_F(b_log::CSV, date, "%s", header_fmt.c_str());
 
     Schedule::convert_policy(batsim_config["reschedule-policy"].GetString(),_reschedule_policy);
@@ -349,7 +349,7 @@ void EasyBackfilling3::make_decisions(double date,
 
     // @note LH: added fmt string for test log and csv
     // string log_fmt = "FINISHED_JOB_ID = [%s]: START TIME = [%.15f], RUN_TIME = [%.15f], EST FINISH TIME: [%.15f], REAL FINISH TIME: [%.15f] || FINISH_TIME_DIFF = [%.15f], DIFFERENCE_COUNT = [%d]\n";
-    string row_fmt = "%s,%d,%.15f,%.15f,%.15f,%.15f";
+    string row_fmt = "%s,%.15f,%.15f,%.15f,%.15f";
 
     // Let's remove finished jobs from the schedule
     for (const string & ended_job_id : _jobs_ended_recently){
@@ -397,8 +397,7 @@ void EasyBackfilling3::make_decisions(double date,
 
             // @note LH: print csv row to output csv
             auto row_str = batsched_tools::string_format(row_fmt,
-                _tmp_job->id.c_str(), 
-                _queue->nb_jobs(),
+                _tmp_job->id.c_str(),
                 _tmp_job->start_time,
                 _tmp_job->run_time,
                 _tmp_job->est_finish_time,

@@ -94,6 +94,7 @@ table_data = {
     "Avg Tat-time": f"{avg_tat_str}\n({avg_tat} s)", 
     "Avg Wait-time":  f"{avg_wait_str}\n({avg_wait} s)"
     }
+
 col_labels = list(table_data.keys())
 cell_text = []
 for key in table_data.keys():
