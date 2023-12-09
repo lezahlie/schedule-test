@@ -8,7 +8,7 @@ import matplotlib.legend_handler as lh
 import matplotlib.ticker as tick
 pd.set_option("display.precision", 15) 
 
-def plot_max(in_df, out_path, ranges):
+def plot_minmax(in_df, out_path, ranges):
     size = len(ranges)
     df = in_df.loc[0:size]
     labels = ['Maximum', 'Minimum']
@@ -23,16 +23,16 @@ def plot_max(in_df, out_path, ranges):
         sns.scatterplot(data=minmax[labels[i]], color=cmap[i], label = labels[i], ax=ax)
 
         ax.set_xticks(range(0,size+1))
-        ax.set_xticklabels(xlabels,fontsize=6)
+        ax.set_xticklabels(xlabels,fontsize=6, rotation=40)
         ax.set_xlabel("Ranges (Jobs)")
 
         ylabels = ax.get_yticks()
         idx = np.where(ylabels >= 0)[0][0]
         ax.set_yticks(ylabels[idx:])
         ax.set_yticklabels(ylabels[idx:],fontsize=6)
-
+        
         if(labels[i]=='Maximum'):
-            ax.yaxis.set_major_formatter(tick.FuncFormatter(lambda x, pos: ('%.5f')%(x*1e6)))
+            ax.yaxis.set_major_formatter(tick.FuncFormatter(lambda x, pos: ('%.2f')%(x*1e6)))
             ax.set_ylabel("Microseconds (E-6)")
         else:
             ax.yaxis.set_major_formatter(tick.FuncFormatter(lambda x, pos: ('%.1f')%(x*1e9)))
@@ -42,7 +42,7 @@ def plot_max(in_df, out_path, ranges):
         h, l = ax.get_legend_handles_labels()
         ax.legend(labels=[labels[i]], loc='upper left', ncol=2, fancybox=True, markerscale=1,
                 handles=[(h[0],h[1])], handler_map={tuple: lh.HandlerTuple(None)})
-        
+    
     fig_file = f"{out_path}/minmax_difference.png"
     plt.savefig(fig_file,dpi=900)
     print(f"Saved plot to: '{fig_file}'")
@@ -67,18 +67,17 @@ def plot_mean(in_df, out_path, ranges):
     ax.errorbar(x=means.index, y=means.Mean_Overall, yerr=stds.Std_Overall, fmt='none', color=cmap[1], alpha=.3, capsize=5)
 
     ax.set_xticks(range(0,size+1))
-    ax.set_xticklabels(xlabels,fontsize=6)
+    ax.set_xticklabels(xlabels,fontsize=6, rotation=40)
     ax.set_xlabel("Ranges (Jobs)")
-
+    
     ylabels = ax.get_yticks()
     ax.set_yticks(ylabels[1:-1])
     ax.set_yticklabels(ylabels[1:-1],fontsize=6)
-    ax.yaxis.set_minor_locator(tick.AutoMinorLocator())
-    ax.yaxis.set_major_formatter(tick.FuncFormatter(lambda x, pos: ('%.4f')%(x*1e6)))
+    ax.yaxis.set_major_formatter(tick.FuncFormatter(lambda x, pos: ('%.2f')%(x*1e6)))
     ax.set_ylabel("Microseconds (E-6)")
 
     h, l = ax.get_legend_handles_labels()
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), ncol=2, 
+    ax.legend(loc='lower left', ncol=2, 
             fancybox=True, labels=['Mean Nonzero', 'Mean Overall'], markerscale=1, 
             handles=zip([h[0],h[1]], [h[2],h[3]]), handler_map={tuple: lh.HandlerTuple(None)})
     ax.set_title("Mean End-Time Floating-Point Differences")
@@ -166,5 +165,5 @@ def main():
     job_ranges = get_ranges(input_df, range_size)
     output_df = calc_metrics(input_df, output_path, job_ranges)
     plot_mean(output_df, output_path, job_ranges)
-    plot_max(output_df, output_path, job_ranges)
+    plot_minmax(output_df, output_path, job_ranges)
 main()
