@@ -66,6 +66,7 @@
 #include "algo/submitter.hpp"
 #include "algo/wt_estimator.hpp"
 */
+#include "algo/fcfs_fast.hpp"
 #include "algo/conservative_bf.hpp"
 #include "algo/easy_bf_fast2.hpp"
 #include "algo/easy_bf_fast2_holdback.hpp"
@@ -301,12 +302,6 @@ int main(int argc, char ** argv)
         LOG_F(1, "variant_options = '%s'", variant_options.c_str());
 
         // Scheduling variant
-        /*if (scheduling_variant == "filler")
-            algo = new Filler(&w, &decision, queue, selector, rjms_delay, &json_doc_variant_options);
-        
-        else if (scheduling_variant == "crasher")
-            algo = new Crasher(&w, &decision, queue, selector, rjms_delay, &json_doc_variant_options);
-        */
         if (scheduling_variant == "easy_bf")
             algo = new EasyBackfilling(&w, &decision, queue, selector, rjms_delay, &json_doc_variant_options);
         else if (scheduling_variant == "easy_bf2")
@@ -314,8 +309,18 @@ int main(int argc, char ** argv)
         // @note LH adding easy_bf3 class
         else if (scheduling_variant == "easy_bf3")
             algo = new EasyBackfilling3(&w, &decision, queue, selector, rjms_delay, &json_doc_variant_options);
-        //if (scheduling_variant == "easy_bf2")
-        //    algo = new EasyBackfilling2(&w, &decision, queue, selector, rjms_delay, &json_doc_variant_options);
+        else if (scheduling_variant == "fcfs_fast")
+            algo = new FCFSFast(&w, &decision, queue, selector, rjms_delay, &json_doc_variant_options);
+        else if (scheduling_variant == "fcfs_fast2")
+            algo = new FCFSFast2(&w, &decision, queue, selector, rjms_delay, &json_doc_variant_options);
+        else if (scheduling_variant == "easy_bf_fast2")
+            algo = new easy_bf_fast2(&w, &decision, queue, selector,rjms_delay, &json_doc_variant_options);
+        else if (scheduling_variant == "easy_bf_fast2_holdback")
+            algo = new easy_bf_fast2_holdback(&w, &decision, queue, selector,rjms_delay, &json_doc_variant_options);
+        else if (scheduling_variant == "conservative_bf")
+            algo = new ConservativeBackfilling(&w, &decision,queue,selector,rjms_delay,&json_doc_variant_options);
+            //algo = new ConservativeBackfilling(&w, &decision, queue, selector, rjms_delay, svg_prefix, &json_doc_variant_options);
+
         /*
         else if (scheduling_variant == "easy_bf_fast")
             algo = new EasyBackfillingFast(&w, &decision, queue, selector, rjms_delay, &json_doc_variant_options);
@@ -340,17 +345,12 @@ int main(int argc, char ** argv)
         else if (scheduling_variant == "fcfs_fast")
             algo = new FCFSFast(&w, &decision, queue, selector, rjms_delay, &json_doc_variant_options);
         */
-       
-        if (scheduling_variant == "fcfs_fast2")
-            algo = new FCFSFast2(&w, &decision, queue, selector, rjms_delay, &json_doc_variant_options);
-        else if (scheduling_variant == "easy_bf_fast2")
-            algo = new easy_bf_fast2(&w, &decision, queue, selector,rjms_delay, &json_doc_variant_options);
-        else if (scheduling_variant == "easy_bf_fast2_holdback")
-            algo = new easy_bf_fast2_holdback(&w, &decision, queue, selector,rjms_delay, &json_doc_variant_options);
-        else if (scheduling_variant == "conservative_bf")
-            algo = new ConservativeBackfilling(&w, &decision,queue,selector,rjms_delay,&json_doc_variant_options);
-            //algo = new ConservativeBackfilling(&w, &decision, queue, selector, rjms_delay, svg_prefix, &json_doc_variant_options);
+
         /*
+        if (scheduling_variant == "filler")
+            algo = new Filler(&w, &decision, queue, selector, rjms_delay, &json_doc_variant_options);
+        else if (scheduling_variant == "crasher")
+            algo = new Crasher(&w, &decision, queue, selector, rjms_delay, &json_doc_variant_options);
         else if (scheduling_variant == "killer")
             algo = new Killer(&w, &decision, queue, selector, rjms_delay, &json_doc_variant_options);
         else if (scheduling_variant == "killer2")

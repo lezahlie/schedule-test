@@ -17,10 +17,11 @@ void FCFSFast::on_simulation_start(double date,
 {
     (void) date;
     (void) batsim_config;
-
+    ISchedulingAlgorithm::set_generators(date);
     _available_machines.insert(IntervalSet::ClosedInterval(0, _nb_machines - 1));
     _nb_available_machines = _nb_machines;
     PPK_ASSERT_ERROR(_available_machines.size() == (unsigned int) _nb_machines);
+
 }
 
 void FCFSFast::on_simulation_end(double date)

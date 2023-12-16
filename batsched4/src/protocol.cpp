@@ -215,7 +215,7 @@ void JsonProtocolWriter::append_execute_job(const string &job_id,
    
     data.AddMember("job_id", Value().SetString(job_id.c_str(), _alloc), _alloc);
     data.AddMember("alloc", Value().SetString(allocated_resources.to_string_hyphen(" ", "-").c_str(), _alloc), _alloc);
-
+    
     if (!executor_to_allocated_resource_mapping.empty())
     {
         Value mapping_object(rapidjson::kObjectType);

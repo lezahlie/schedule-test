@@ -34,10 +34,9 @@ public:
                                                 SortableJobOrder::CompareInformation * compare_info);
 
     // @note LH: decision function declaration
-    void check_priority_job(const Job * priority_job, double date);
-    void check_next_job(const Job * next_job, double date);
+    void check_next_job(const Job * next_job, bool is_priority, double date);
     void remove_scheduled_job(std::string job_id);
-    void max_heapify(int size, int root);
+    void max_heap(int size, int root);
     void schedule_heap_sort(int size);
 
 
@@ -58,28 +57,20 @@ protected:
         double start_time;
         double run_time;
         double est_finish_time;
+        double real_finish_time;
+        bool is_running;
         IntervalSet allocated_machines;
-    };
-
-    struct Priority_Job
-    {
-        std::string id;
-        int requested_resources;
-        int extra_resources;
-        double shadow_time;
-        double est_finish_time;
     };
 
     b_log *_testCSV;
     std::vector<Scheduled_Job *> _scheduled_jobs;
-    std::vector<Scheduled_Job *> _backfilled_jobs;
     Scheduled_Job * _tmp_job = NULL;
-    Priority_Job * _p_job = NULL;
     int _backfill_counter = 0;
     bool _can_run = false;
+    bool _job_exists = false;
     bool _is_priority = false;
+    bool _priority_matters = false;
     // @note LH: merge additions
     IntervalSet _available_machines;
     int _nb_available_machines = -1;
-    int _job_exists_count = 0;
 };

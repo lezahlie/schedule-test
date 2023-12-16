@@ -126,7 +126,6 @@ void FCFSFast2::on_machine_available_notify_event(double date, IntervalSet machi
 
 void FCFSFast2::on_machine_state_changed(double date, IntervalSet machines, int new_state)
 {
-   
 
 }
 void FCFSFast2::on_myKillJob_notify_event(double date){
@@ -140,8 +139,6 @@ void FCFSFast2::on_myKillJob_notify_event(double date){
         
     
 }
-
-
 
 void FCFSFast2::on_machine_down_for_repair(double date){
     //get a random number of a machine to kill
@@ -191,7 +188,6 @@ void FCFSFast2::on_machine_down_for_repair(double date){
     }
 }
 
-
 void FCFSFast2::on_machine_instant_down_up(double date){
     //get a random number of a machine to kill
     int number = machine_unif_distribution->operator()(generator_machine);
@@ -222,7 +218,6 @@ void FCFSFast2::on_machine_instant_down_up(double date){
       LOG_F(INFO,"Job %s was not running but was supposed to be killed due to job_fault event",job.c_str());
 }
 */
-
 void FCFSFast2::on_requested_call(double date,int id,batsched_tools::call_me_later_types forWhat)
 {
     
@@ -287,16 +282,19 @@ void FCFSFast2::on_requested_call(double date,int id,batsched_tools::call_me_lat
     
 
 }
+
 void FCFSFast2::on_no_more_static_job_to_submit_received(double date){
     ISchedulingAlgorithm::on_no_more_static_job_to_submit_received(date);
 
 }
+
 void FCFSFast2::on_no_more_external_event_to_occur(double date){
     
     _wrap_it_up = true;    
     
     
 }
+
 void FCFSFast2::on_job_end(double date, std::vector<std::string> job_ids)
 {
     (void) date;
@@ -616,7 +614,7 @@ void FCFSFast2::make_decisions(double date,
             
             if (_share_packing && new_job->nb_requested_resources==1)
             {
-                 bool found = false;
+                bool found = false;
                 //it is a 1 resource job, iterate over the available core machines until it finds one to put the job on.
                 for (auto it = _available_core_machines.elements_begin(); it != _available_core_machines.elements_end(); ++it)
                 {
@@ -665,19 +663,16 @@ void FCFSFast2::make_decisions(double date,
             else if (new_job->nb_requested_resources <= _nb_available_machines)
             {
                 LOG_F(INFO,"here");
-                IntervalSet machines = _available_machines.left(
-                    new_job->nb_requested_resources);
-                _decision->add_execute_job(new_job->id,
-                        machines, date);
+                IntervalSet machines = _available_machines.left(new_job->nb_requested_resources);
+                _decision->add_execute_job(new_job->id, machines, date);
                 
 
                 // Update data structures
                 _available_machines -= machines;
                 _nb_available_machines -= new_job->nb_requested_resources;
-                 _current_allocations[new_job_id] = machines;
+                _current_allocations[new_job_id] = machines;
                 _running_jobs.insert(new_job->id);
             }
-            
             else
             {
                 // No. The job is queued up.
@@ -695,13 +690,14 @@ void FCFSFast2::make_decisions(double date,
     }
     */
     if (_jobs_killed_recently.empty() && _pending_jobs.empty() && _running_jobs.empty() &&
-             _need_to_send_finished_submitting_jobs && _no_more_static_job_to_submit_received && !date<1.0 )
+            _need_to_send_finished_submitting_jobs && _no_more_static_job_to_submit_received && !date<1.0 )
     {
         _decision->add_scheduler_finished_submitting_jobs(date);
         _need_to_send_finished_submitting_jobs = false;
     }
-      
+
 }
+
 std::string FCFSFast2::to_json_desc(rapidjson::Document * doc)
 {
   rapidjson::StringBuffer buffer;

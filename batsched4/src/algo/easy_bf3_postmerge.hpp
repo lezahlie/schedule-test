@@ -37,7 +37,7 @@ public:
     void check_priority_job(const Job * priority_job, double date);
     void check_next_job(const Job * next_job, double date);
     void remove_scheduled_job(std::string job_id);
-    void max_heapify(int size, int root);
+    void max_heap(int size, int root);
     void schedule_heap_sort(int size);
 
 
@@ -58,6 +58,7 @@ protected:
         double start_time;
         double run_time;
         double est_finish_time;
+        double real_finish_time;
         IntervalSet allocated_machines;
     };
 

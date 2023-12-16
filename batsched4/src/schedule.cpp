@@ -289,12 +289,6 @@ std::map<const Job *, IntervalSet, JobComparator>  Schedule::JobMap_from_json(co
     }
     return ourMap;
 }
-
-
-
-
-
-
 void Schedule::set_smallest_and_largest_time_slice_length(Rational length){
     //first set the smallest and largest to init values
 

@@ -48,8 +48,8 @@ batsched_deps = [
 #    'src/algo/easy_bf2.hpp',
 #    'src/algo/easy_bf3.cpp',
 #    'src/algo/easy_bf3.hpp',
-
-
+#    'src/algo/fcfs_fast.cpp',
+#    'src/algo/fcfs_fast.hpp',
 #    'src/algo/easy_bf_fast.cpp',
 #    'src/algo/easy_bf_fast.hpp',
     
@@ -69,8 +69,7 @@ batsched_deps = [
 #    'src/algo/energy_bf_monitoring_period.hpp',
 #    'src/algo/energy_watcher.cpp',
 #    'src/algo/energy_watcher.hpp',
-#    'src/algo/fcfs_fast.cpp',
-#    'src/algo/fcfs_fast.hpp',
+
 #    'src/algo/filler.hpp',
 #    'src/algo/filler.cpp',
 #    'src/algo/killer2.cpp',
@@ -111,6 +110,8 @@ src = [
     'src/algo/easy_bf_fast2.hpp',
     'src/algo/easy_bf_fast2_holdback.cpp',
     'src/algo/easy_bf_fast2_holdback.hpp',
+    'src/algo/fcfs_fast.cpp',
+    'src/algo/fcfs_fast.hpp',
     'src/algo/fcfs_fast2.cpp',
     'src/algo/fcfs_fast2.hpp',
     'src/algo/conservative_bf.cpp',
