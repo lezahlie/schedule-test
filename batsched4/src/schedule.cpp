@@ -755,8 +755,8 @@ JobAlloc Schedule::add_job_first_fit(
 
     return add_job_first_fit_after_time_slice(job, _profile.begin(), selector, assert_insertion_successful);
 }
+
 void Schedule::find_least_impactful_fit(JobAlloc* alloc,TimeSliceIterator begin_slice, TimeSliceIterator end_slice, IMPACT_POLICY policy){
-    
     LOG_F(INFO,"find_least_impactful_fit");
     const Job * job = alloc->job;
     //we will want to use at least these machines
@@ -767,6 +767,7 @@ void Schedule::find_least_impactful_fit(JobAlloc* alloc,TimeSliceIterator begin_
         alloc->used_machines = amdp.left(job->nb_requested_resources);
         return;
     }
+
     //get all the machines and subtract those that we are definitely going to use
     IntervalSet all_machines = IntervalSet::ClosedInterval(0, _nb_machines - 1);
     all_machines -= amdp;
@@ -786,7 +787,6 @@ void Schedule::find_least_impactful_fit(JobAlloc* alloc,TimeSliceIterator begin_
         IntervalSet running_machines = IntervalSet::empty_interval_set();
         for ( auto job : jobs)
         {
-
             if (_profile.begin()->contains_job(job))
             {
                 jobs_running.push_back(job);

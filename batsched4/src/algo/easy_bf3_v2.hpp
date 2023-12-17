@@ -1,5 +1,4 @@
 #pragma once
-
 #include <list>
 #include <algorithm>
 #include "../isalgorithm.hpp"
@@ -10,9 +9,10 @@
 #include "../machine.hpp"
 #include "../batsched_tools.hpp"
 #include <random>
-// @note LH: testing macros
+//@note LH: added
 #define T_CSV_INSTANCE _testCSV
-#define MIN(a,b) (((a)<(b)) ? (a) : (b))
+#define MIN(a,b) (((a)<(b))?(a):(b))
+
 
 class EasyBackfilling3 : public ISchedulingAlgorithm
 {
@@ -36,9 +36,8 @@ public:
     // @note LH: decision function declaration
     void check_priority_job(const Job * priority_job, double date);
     void check_next_job(const Job * next_job, double date);
-    void add_scheduled_job(const Job * job, double date);
     void remove_scheduled_job(std::string job_id);
-    void max_heap(int size, int root);
+    void max_heapify(int size, int root);
     void schedule_heap_sort(int size);
 
 
@@ -76,12 +75,11 @@ protected:
     std::vector<Scheduled_Job *> _backfilled_jobs;
     Scheduled_Job * _tmp_job = NULL;
     Priority_Job * _p_job = NULL;
-    int _backfill_counter = 0;
     bool _can_run = false;
     bool _is_priority = false;
-    // @note LH: merge additions
-    IntervalSet _available_machines;
+    int _backfill_counter = 0;
     int _nb_available_machines = -1;
+    IntervalSet _available_machines;
     // @note added for time analysis
     double _overall_time = 0.0;
     double _decision_time = 0.0;
