@@ -4,8 +4,6 @@
 #include "../batsched_tools.hpp"
 using namespace std;
 // @note LH: testing macros
-#define T_CSV_INSTANCE _testCSV
-#define MIN(a,b) ((a)<(b)) ? (a) : (b)
 
 
 EasyBackfilling3::EasyBackfilling3(Workload * workload,
@@ -61,7 +59,7 @@ void EasyBackfilling3::on_simulation_end(double date)
     GET_TIME(_end_overall);
     _overall_time = _end_overall-_begin_overall;
     //  @note show total backfilled jobs
-    LOG_F(ERROR,"[Overall_Time] = %.15f,[Decision_Time] = %.15f, [Backfilled_Jobs] = %d", _overall_time, _decision_time, _backfill_counter);
+    LOG_F(ERROR, "[Overall_Time] = %.15f, [Decision_Time] = %.15f, [Backfilled_Jobs] = %d", _overall_time, _decision_time, _backfill_counter);
     (void) date;
 }
 
@@ -140,12 +138,11 @@ void EasyBackfilling3::make_decisions(double date,
     // If no resources have been released, we can just try to backfill the newly-released jobs
     if (_jobs_ended_recently.empty())
     {
-        int nb_available_machines = _nb_available_machines;
 
         // @note LH: priority jobs do not run here (hence loops if condition)
         _is_priority = false;
 
-        for (unsigned int i = 0; i < recently_queued_jobs.size() && nb_available_machines > 0; ++i)
+        for (unsigned int i = 0; i < recently_queued_jobs.size() && _nb_available_machines > 0; ++i)
         {
             const string & new_job_id = recently_queued_jobs[i];
             const Job * new_job = (*_workload)[new_job_id];
@@ -153,14 +150,12 @@ void EasyBackfilling3::make_decisions(double date,
             // The job could have already been executed by sort_queue_while_handling_priority_job,
             // that's why we check whether the queue contains the job.
             if (_queue->contains_job(new_job) 
-                && new_job != priority_job_after 
-                && new_job->nb_requested_resources <= nb_available_machines)
+                && new_job != priority_job_after)
             {
                 
                 check_next_job(new_job, date); 
                 if(_can_run){
                     _decision->add_execute_job(new_job_id, _tmp_job->allocated_machines, date);
-                    nb_available_machines -= new_job->nb_requested_resources;
                     _queue->remove_job(new_job);
                     _backfill_counter++;
                 }

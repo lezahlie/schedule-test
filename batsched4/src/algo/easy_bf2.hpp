@@ -1,7 +1,5 @@
 #pragma once
-
 #include <list>
-
 #include "../isalgorithm.hpp"
 #include "../json_workload.hpp"
 #include "../locality.hpp"
@@ -10,7 +8,7 @@
 #include "../machine.hpp"
 #include "../batsched_tools.hpp"
 #include <random>
-
+//@note LH: added
 
 class EasyBackfilling2 : public ISchedulingAlgorithm
 {
@@ -76,5 +74,4 @@ protected:
     double _begin_decision;
     double _end_overall;
     double _end_decision;
-
 };

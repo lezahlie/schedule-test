@@ -47,9 +47,8 @@ void EasyBackfilling2::on_simulation_start(double date, const rapidjson::Value &
     
     _output_folder=batsim_config["output-folder"].GetString();
     _output_folder.replace(_output_folder.rfind("/out"), std::string("/out").size(), "");
-    
     LOG_F(INFO,"output folder %s",_output_folder.c_str());
-    
+
     Schedule::convert_policy(batsim_config["reschedule-policy"].GetString(),_reschedule_policy);
     Schedule::convert_policy(batsim_config["impact-policy"].GetString(),_impact_policy);
     
@@ -83,7 +82,7 @@ void EasyBackfilling2::on_simulation_end(double date)
     GET_TIME(_end_overall);
     _overall_time = _end_overall-_begin_overall;
      //  @note show total backfilled jobs
-    LOG_F(ERROR,"[Overall_Time] = %.6f, [Decision_Time] = %.6f, [Backfilled_Jobs] = %d", _overall_time, _decision_time, _backfill_counter);
+    LOG_F(ERROR, "[Overall_Time] = %.15f, [Decision_Time] = %.15f, [Backfilled_Jobs] = %d", _overall_time, _decision_time, _backfill_counter);
     (void) date;
 }
 

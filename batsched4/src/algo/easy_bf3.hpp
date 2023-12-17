@@ -1,4 +1,5 @@
 #pragma once
+#include <list>
 #include <algorithm>
 #include "../isalgorithm.hpp"
 #include "../json_workload.hpp"
@@ -8,6 +9,9 @@
 #include "../machine.hpp"
 #include "../batsched_tools.hpp"
 #include <random>
+//@note LH: added
+#define T_CSV_INSTANCE _testCSV
+#define MIN(a,b) ((a)<(b)) ? (a) : (b)
 
 
 class EasyBackfilling3 : public ISchedulingAlgorithm

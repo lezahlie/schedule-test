@@ -305,7 +305,7 @@ int main(int argc, char ** argv)
         if (scheduling_variant == "easy_bf")
             algo = new EasyBackfilling(&w, &decision, queue, selector, rjms_delay, &json_doc_variant_options);
         else if (scheduling_variant == "easy_bf2")
-            algo = new EasyBackfilling(&w, &decision, queue, selector, rjms_delay, &json_doc_variant_options);
+            algo = new EasyBackfilling2(&w, &decision, queue, selector, rjms_delay, &json_doc_variant_options);
         // @note LH adding easy_bf3 class
         else if (scheduling_variant == "easy_bf3")
             algo = new EasyBackfilling3(&w, &decision, queue, selector, rjms_delay, &json_doc_variant_options);
