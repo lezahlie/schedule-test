@@ -23,7 +23,7 @@ js = JobSet.from_csv(f'/home/lezahlie/src/current/simulator/experiments/{input_f
 print(js.df.describe())
 
 mpl.rcParams['figure.figsize'] = 10,5
-js.gantt(labeler = False)
+js.gantt(labeler = True)
 
 end_time = round(js.df.finish_time.max(),6)
 end_time_dhms = pd.to_timedelta(end_time, unit="s")

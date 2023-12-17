@@ -1,7 +1,4 @@
 #pragma once
-
-
-#include <list>
 #include <algorithm>
 #include "../isalgorithm.hpp"
 #include "../json_workload.hpp"
@@ -11,8 +8,6 @@
 #include "../machine.hpp"
 #include "../batsched_tools.hpp"
 #include <random>
-// @note LH: addd for testing merge
-#include <unordered_map>
 
 class EasyBackfilling3 : public ISchedulingAlgorithm
 {
@@ -75,11 +70,16 @@ protected:
     std::vector<Scheduled_Job *> _backfilled_jobs;
     Scheduled_Job * _tmp_job = NULL;
     Priority_Job * _p_job = NULL;
-    int _backfill_counter = 0;
     bool _can_run = false;
     bool _is_priority = false;
-    // @note LH: merge additions
-    IntervalSet _available_machines;
+    int _backfill_counter = 0;
     int _nb_available_machines = -1;
-    int _job_exists_count = 0;
+    IntervalSet _available_machines;
+    // @note added for time analysis
+    double _overall_time = 0.0;
+    double _decision_time = 0.0;
+    time_t _begin_overall;
+    time_t _begin_decision;
+    time_t _end_overall;
+    time_t _end_decision;
 };

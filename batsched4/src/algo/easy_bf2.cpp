@@ -17,7 +17,7 @@ EasyBackfilling2::EasyBackfilling2(Workload * workload,
                                  rapidjson::Document * variant_options) :
     ISchedulingAlgorithm(workload, decision, queue, selector, rjms_delay, variant_options)
 {
-        //initialize reservation queue
+    //initialize reservation queue
     SortableJobOrder * order = new FCFSOrder;//reservations do not get killed so we do not need OriginalFCFSOrder for this
     _reservation_queue = new Queue(order);
 }
@@ -29,10 +29,14 @@ EasyBackfilling2::~EasyBackfilling2()
 
 void EasyBackfilling2::on_simulation_start(double date, const rapidjson::Value & batsim_event)
 {
-   //added
+
+    // @note LH added for time analysis
+    time(&_begin_overall);
+    //added
     pid_t pid = batsched_tools::get_batsched_pid();
     _decision->add_generic_notification("PID",std::to_string(pid),date);
     const rapidjson::Value & batsim_config = batsim_event["config"];
+    
     LOG_F(INFO,"ON simulation start");
     _output_svg=batsim_config["output-svg"].GetString();
     _svg_frame_start = batsim_config["svg-frame-start"].GetInt64();
@@ -42,14 +46,12 @@ void EasyBackfilling2::on_simulation_start(double date, const rapidjson::Value &
     LOG_F(INFO,"output svg %s",_output_svg.c_str());
     
     _output_folder=batsim_config["output-folder"].GetString();
-    
     _output_folder.replace(_output_folder.rfind("/out"), std::string("/out").size(), "");
     
     LOG_F(INFO,"output folder %s",_output_folder.c_str());
     
     Schedule::convert_policy(batsim_config["reschedule-policy"].GetString(),_reschedule_policy);
     Schedule::convert_policy(batsim_config["impact-policy"].GetString(),_impact_policy);
-    
     
     //was there
     _schedule = Schedule(_nb_machines, date);
@@ -77,11 +79,18 @@ void EasyBackfilling2::on_simulation_start(double date, const rapidjson::Value &
 
 void EasyBackfilling2::on_simulation_end(double date)
 {
+    // @note LH added for time analysis
+    time(&_end_overall);
+    _overall_time = difftime(_end_overall,_begin_overall);
+     //  @note show total backfilled jobs
+    LOG_F(ERROR,"[Overall_Time] = %.6f, [Decision_Time] = %.6f, [Backfilled_Jobs] = %d", _overall_time, _decision_time, _backfill_counter);
     (void) date;
 }
+
 void EasyBackfilling2::set_machines(Machines *m){
     _machines = m;
 }
+
 void EasyBackfilling2::on_machine_down_for_repair(batsched_tools::KILL_TYPES forWhat,double date){
     (void) date;
     auto sort_original_submit_pair = [](const std::pair<const Job *,IntervalSet> j1,const std::pair<const Job *,IntervalSet> j2)->bool{
@@ -180,7 +189,6 @@ void EasyBackfilling2::on_machine_down_for_repair(batsched_tools::KILL_TYPES for
     
 }
 
-
 void EasyBackfilling2::on_machine_instant_down_up(batsched_tools::KILL_TYPES forWhat,double date){
     (void) date;
     //get a random number of a machine to kill
@@ -233,6 +241,7 @@ void EasyBackfilling2::on_machine_instant_down_up(batsched_tools::KILL_TYPES for
             _schedule.output_to_svg("END On Machine Instant Down Up  Machine #: "+std::to_string(number));
     
 }
+
 void EasyBackfilling2::on_requested_call(double date,int id,batsched_tools::call_me_later_types forWhat)
 {
         if (_output_svg != "none")
@@ -321,6 +330,8 @@ void EasyBackfilling2::make_decisions(double date,
                                      SortableJobOrder::UpdateInformation *update_info,
                                      SortableJobOrder::CompareInformation *compare_info)
 {
+    // @note LH added for time analysis
+    time(&_begin_decision);
     const Job * priority_job_before = _queue->first_job_or_nullptr();
 
     // Let's remove finished jobs from the schedule
@@ -353,8 +364,6 @@ void EasyBackfilling2::make_decisions(double date,
     // Let's update the schedule's present
     _schedule.update_first_slice(date);
 
-
-
     //We will want to handle any Failures before we start allowing anything new to run
     //This is very important for when there are repair times, as the machine may be down
 
@@ -373,9 +382,6 @@ void EasyBackfilling2::make_decisions(double date,
     }
     //ok we handled them all, clear the container
     _on_machine_down_for_repairs.clear();
-
-
-
 
     // Queue sorting
     const Job * priority_job_after = nullptr;
@@ -403,6 +409,7 @@ void EasyBackfilling2::make_decisions(double date,
                     _decision->add_execute_job(new_job_id, alloc.used_machines, date);
                     _queue->remove_job(new_job);
                     nb_available_machines -= new_job->nb_requested_resources;
+                    _backfill_counter++;
                 }
                 else
                     _schedule.remove_job(new_job);
@@ -444,6 +451,7 @@ void EasyBackfilling2::make_decisions(double date,
                 {
                     _decision->add_execute_job(job->id, alloc.used_machines, date);
                     job_it = _queue->remove_job(job_it);
+                    _backfill_counter++;
                 }
                 else
                 {
@@ -453,6 +461,9 @@ void EasyBackfilling2::make_decisions(double date,
             }
         }
     }
+    // @note LH added for time analysis
+    time(&_end_decision);
+    _decision_time += difftime(_end_decision,_begin_decision);
 }
 
 

@@ -3,10 +3,10 @@
 #include "../pempek_assert.hpp"
 #include "../batsched_tools.hpp"
 using namespace std;
-
 // @note LH: testing macros
 #define T_CSV_INSTANCE _testCSV
 #define MIN(a,b) ((a)<(b)) ? (a) : (b)
+
 
 EasyBackfilling3::EasyBackfilling3(Workload * workload,
                                  SchedulingDecision * decision,
@@ -19,7 +19,6 @@ EasyBackfilling3::EasyBackfilling3(Workload * workload,
         //initialize reservation queue
     SortableJobOrder * order = new FCFSOrder;//reservations do not get killed so we do not need OriginalFCFSOrder for this
     _reservation_queue = new Queue(order);
-
     // @note LH: test csv file
     _testCSV = new b_log();
     _p_job = new Priority_Job();
@@ -32,6 +31,8 @@ EasyBackfilling3::~EasyBackfilling3()
 
 void EasyBackfilling3::on_simulation_start(double date, const rapidjson::Value & batsim_event)
 {
+    // @note LH added for time analysis
+    time(&_begin_overall);
     LOG_F(INFO,"on simulation start");
     pid_t pid = batsched_tools::get_batsched_pid();
     _decision->add_generic_notification("PID",std::to_string(pid),date);
@@ -51,20 +52,17 @@ void EasyBackfilling3::on_simulation_start(double date, const rapidjson::Value &
     _available_machines.insert(IntervalSet::ClosedInterval(0, _nb_machines - 1));
     _nb_available_machines = _nb_machines;
     PPK_ASSERT_ERROR(_available_machines.size() == (unsigned int) _nb_machines);
-
     (void) batsim_config;
-
 }
 
 void EasyBackfilling3::on_simulation_end(double date)
 {
-
-    LOG_F(INFO,"on simulation end");
+    // @note LH added for time analysis
+    time(&_end_overall);
+    _overall_time = difftime(_end_overall,_begin_overall);
     //  @note show total backfilled jobs
-    LOG_F(ERROR,"[TOTAL_BACKFILLED_JOBS] = %d", _backfill_counter);
-    LOG_F(ERROR,"[JOB_EXISTS] = %d", _job_exists_count);
+    LOG_F(ERROR,"[Overall_Time] = %.6f, [Decision_Time] = %.6f, [Backfilled_Jobs] = %d", _overall_time, _decision_time, _backfill_counter);
     (void) date;
-    
 }
 
 
@@ -72,6 +70,8 @@ void EasyBackfilling3::make_decisions(double date,
                                      SortableJobOrder::UpdateInformation *update_info,
                                      SortableJobOrder::CompareInformation *compare_info)
 {
+    // @note LH added for time analysis
+    time(&_begin_decision);
     const Job * priority_job_before = _queue->first_job_or_nullptr();
 
     // Let's remove finished jobs from the schedule
@@ -188,8 +188,8 @@ void EasyBackfilling3::make_decisions(double date,
             if(_can_run){
                 _decision->add_execute_job(job->id, _tmp_job->allocated_machines, date);
                 job_it = _queue->remove_job(job_it); // Updating job_it to remove on traversal
-                if(job == priority_job_after) priority_job_after = _queue->first_job_or_nullptr();
-                _backfill_counter++;
+                if(_is_priority) priority_job_after = _queue->first_job_or_nullptr();
+                else _backfill_counter++;
             }else ++job_it;  
         }
 
@@ -204,6 +204,9 @@ void EasyBackfilling3::make_decisions(double date,
     _decision->add_generic_notification("utilization",std::to_string(_schedule.get_utilization()),date);
     _decision->add_generic_notification("utilization_no_resv",std::to_string(_schedule.get_utilization_no_resv()),date);
 */
+    // @note LH added for time analysis
+    time(&_end_decision);
+    _decision_time += difftime(_end_decision,_begin_decision);
 }
 
 
@@ -250,21 +253,12 @@ void EasyBackfilling3::check_next_job(const Job * next_job, double date)
     _tmp_job = NULL;
     int machine_count = _nb_available_machines;
 
-    /*@note 
-        priority job can run if the following is true:
-            - requested resources <=  current available 
-        job can be backfilled if ONE of the following is true:
-        - requested resources <= current available -AND- it will finish before the current priority jobs start (shadow) time
-        - requested resources <= MIN[ current available resources, priority job calculated 'extra resources' ]
-    */
-    _can_run = (_is_priority) 
-                ? (_p_job->requested_resources <= machine_count)
-                : (next_job->nb_requested_resources <= _nb_available_machines 
-                        && (date+next_job->duration) <= _p_job->shadow_time)
-                    || (next_job->nb_requested_resources < MIN(_nb_available_machines,_p_job->extra_resources));
-
-    // @note job is the priority job
     if(_is_priority){
+        /* @note 
+            priority job can run if the following is true:
+                - requested resources <=  current available 
+        */
+        _can_run =  next_job->nb_requested_resources <= _nb_available_machines;
         // @note update priority job if it changed
         if(_p_job->id != next_job->id){
             _p_job->id = next_job->id;
@@ -282,7 +276,16 @@ void EasyBackfilling3::check_next_job(const Job * next_job, double date)
                 }
             }
         }
+    }else{
+        /* @note
+            job can be backfilled if ONE of the following is true:
+            - requested resources <= current available -AND- it will finish before the current priority jobs start (shadow) time
+            - requested resources <= MIN[ current available resources, priority job calculated 'extra resources' ]
+        */
+        _can_run = ((next_job->nb_requested_resources <= _nb_available_machines) && ((date+next_job->duration) <= _p_job->shadow_time)) 
+            || next_job->nb_requested_resources <= (MIN(_nb_available_machines,_p_job->extra_resources));
     }
+    
 
     // @note current job can run
     if(_can_run){
@@ -302,7 +305,7 @@ void EasyBackfilling3::check_next_job(const Job * next_job, double date)
         // @note sort the schedule incase job was backfilled
         schedule_heap_sort(_scheduled_jobs.size());
     }
-
+    /*
     // @note logging to verify 
     auto res_str = batsched_tools::string_format(
                 "check_next_job(): JOB_ID[%s]: is_priority = %s, can_run = %s, requested_resources = %d, _nb_available_machines = %d, _p_job->extra_machines = %d, start_time = %.15f, est_end_time = %.15f\n",
@@ -316,6 +319,7 @@ void EasyBackfilling3::check_next_job(const Job * next_job, double date)
                 date+next_job->duration
     );
     LOG_F(ERROR,"%s", res_str.c_str());
+    */
 }
 
 //@note LH: added function to remove jobs from schedule
@@ -351,7 +355,7 @@ void EasyBackfilling3::schedule_heap_sort(int size)
     for(int i = size - 1; i > 0; i--){
         max_heapify(0, i);
     }
-
+    /*
     // @note LH: logging to verify 
     string fmt = "%s,%.15f,%.15f,%.15f,%.15f,%s";
     LOG_F(ERROR, "------------------------------------------------------------------------");
@@ -366,4 +370,5 @@ void EasyBackfilling3::schedule_heap_sort(int size)
         LOG_F(ERROR, "%s", res_str.c_str());
     }
     LOG_F(ERROR, "------------------------------------------------------------------------");
+    */
 }
