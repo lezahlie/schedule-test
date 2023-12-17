@@ -9,6 +9,7 @@
 #include "../batsched_tools.hpp"
 #include <random>
 
+
 class EasyBackfilling3 : public ISchedulingAlgorithm
 {
 public:
@@ -78,8 +79,8 @@ protected:
     // @note added for time analysis
     double _overall_time = 0.0;
     double _decision_time = 0.0;
-    time_t _begin_overall;
-    time_t _begin_decision;
-    time_t _end_overall;
-    time_t _end_decision;
+    double _begin_overall;
+    double _begin_decision;
+    double _end_overall;
+    double _end_decision;
 };

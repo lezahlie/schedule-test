@@ -31,7 +31,7 @@ void EasyBackfilling2::on_simulation_start(double date, const rapidjson::Value &
 {
 
     // @note LH added for time analysis
-    time(&_begin_overall);
+    GET_TIME(_begin_overall);
     //added
     pid_t pid = batsched_tools::get_batsched_pid();
     _decision->add_generic_notification("PID",std::to_string(pid),date);
@@ -80,8 +80,8 @@ void EasyBackfilling2::on_simulation_start(double date, const rapidjson::Value &
 void EasyBackfilling2::on_simulation_end(double date)
 {
     // @note LH added for time analysis
-    time(&_end_overall);
-    _overall_time = difftime(_end_overall,_begin_overall);
+    GET_TIME(_end_overall);
+    _overall_time = _end_overall-_begin_overall;
      //  @note show total backfilled jobs
     LOG_F(ERROR,"[Overall_Time] = %.6f, [Decision_Time] = %.6f, [Backfilled_Jobs] = %d", _overall_time, _decision_time, _backfill_counter);
     (void) date;
@@ -331,7 +331,7 @@ void EasyBackfilling2::make_decisions(double date,
                                      SortableJobOrder::CompareInformation *compare_info)
 {
     // @note LH added for time analysis
-    time(&_begin_decision);
+    GET_TIME(_begin_decision);
     const Job * priority_job_before = _queue->first_job_or_nullptr();
 
     // Let's remove finished jobs from the schedule
@@ -462,8 +462,8 @@ void EasyBackfilling2::make_decisions(double date,
         }
     }
     // @note LH added for time analysis
-    time(&_end_decision);
-    _decision_time += difftime(_end_decision,_begin_decision);
+    GET_TIME(_end_decision);
+    _decision_time += (_end_decision-_begin_decision);
 }
 
 

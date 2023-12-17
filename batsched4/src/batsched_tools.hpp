@@ -10,11 +10,16 @@
 #include <memory>
 #include "json_workload.hpp"
 #include "schedule.hpp"
+#include <sys/time.h>
 struct JobAlloc;
 struct Job;
 
 
-
+#define GET_TIME(now) { \
+   struct timeval t; \
+   gettimeofday(&t, NULL); \
+   now = t.tv_sec + t.tv_usec/1000000.; \
+}
 
 #define BLOG_F(log_type,fmt,...) B_LOG_INSTANCE->blog(log_type,fmt,date,## __VA_ARGS__)
 
