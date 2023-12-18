@@ -88,7 +88,6 @@ void EasyBackfilling3::make_decisions(double date,
             auto j_index = distance(_scheduled_jobs.begin(), j_iter);
             _tmp_job = _scheduled_jobs.at(j_index);
 
-
             // @note LH: print csv row to output csv
             auto row_str = batsched_tools::string_format(row_fmt,
                 _tmp_job->id.c_str(),
@@ -209,7 +208,6 @@ void EasyBackfilling3::sort_queue_while_handling_priority_job(const Job * priori
     // If the priority job has changed
     if (priority_job_after != priority_job_before)
     {
-
         // Let us ensure the priority job is in the schedule.
         // To do so, while the priority job can be executed now, we keep on inserting it into the schedule
         for (bool could_run_priority_job = true; could_run_priority_job && priority_job_after != nullptr; )
@@ -274,7 +272,6 @@ void EasyBackfilling3::check_next_job(const Job * next_job, double date)
     _can_run = ((date+next_job->duration) <= _p_job->shadow_time)
         ? (next_job->nb_requested_resources <= _nb_available_machines) 
         : (next_job->nb_requested_resources <= (MIN(_nb_available_machines,_p_job->extra_resources)));
-
     // @note  job can be backfilled so addd it tot he schedule
     if(_can_run){
         add_scheduled_job(next_job,date);
@@ -282,7 +279,6 @@ void EasyBackfilling3::check_next_job(const Job * next_job, double date)
         schedule_heap_sort(_scheduled_jobs.size());
         _backfill_counter++;
     }
-
 }
 
 //@note LH: added function to add jobs to the schedule
