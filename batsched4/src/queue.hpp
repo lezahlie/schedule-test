@@ -145,6 +145,8 @@ public:
     std::list<SortableJob *>::const_iterator begin() const;
     std::list<SortableJob *>::const_iterator end() const;
     Queue &operator=(const Queue& other);
+    // @note LH: added for debugging easy_bf
+    void get_current_queue(std::vector<const Job*> &tmp_queue);
 
 private:
     std::list<SortableJob *> _jobs;

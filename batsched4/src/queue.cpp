@@ -294,8 +294,8 @@ void Queue::sort_queue(SortableJobOrder::UpdateInformation *update_info,
 
     // Sort
     _jobs.sort([this, compare_info](const SortableJob * j1, const SortableJob * j2)
-                {
-                    return _order->compare(j1, j2, compare_info);
+    {
+        return _order->compare(j1, j2, compare_info);
     });
 }
 
@@ -322,6 +322,7 @@ bool Queue::contains_job(const Job *job) const
                            });
     return it != _jobs.end();
 }
+
 
 bool Queue::is_empty() const
 {
@@ -400,5 +401,13 @@ Queue& Queue::operator=(const Queue&  other){
 void Queue::set_release_date_on_job(std::list<SortableJob *>::iterator job_it,Rational release_date){
     SortableJob * sjob = *job_it;
     sjob->release_date = release_date;
+}
+
+
+// @note LH: added for debugged easybf
+void Queue::get_current_queue(std::vector<const Job*> &tmp_queue){
+    for (SortableJob * sj : _jobs){
+        tmp_queue.push_back(sj->job);
+    }
 }
 

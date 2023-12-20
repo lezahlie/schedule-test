@@ -34,7 +34,6 @@ ax = plt.gca()
 
 xticks = ax.get_xticks()
 
-'''
 #For smaller plots
 print(f"xticks = {xticks}")
 xticks = np.insert(xticks, -2, end_time)
@@ -46,20 +45,20 @@ time_xticks[0] = f"{tmp_time}\n[START TIME]"
 tmp_time = time_xticks[-2]
 time_xticks[-2] = f"{tmp_time}\n[END TIME]"
 
-'''
+
 time_xticks = [str(pd.to_timedelta(x, unit="s")) for x in xticks]
 str_time_xticks = [x.replace(" days ", " days\n") for x in time_xticks]
 ax.set_xticks(xticks, labels=str_time_xticks, fontsize=8)
 
-'''
+
 #For smaller plots
 yticks = ax.get_yticks()
 #yticks= np.insert(yticks,-1, max_nodes)
 print(f"yticks = {yticks}")
 ytick_labels = [str(round(y)) for y in yticks]
 ytick_labels[-1] = ""
-ax.set_yticks(yticks[1:], labels=ytick_labels[1:],fontsize=8)
-'''
+ax.set_yticks(yticks, labels=ytick_labels,fontsize=8)
+
 
 yticks = [y for y in range(0,max_nodes+1, 1)]
 ytick_labels = [str(y) for y in yticks]
