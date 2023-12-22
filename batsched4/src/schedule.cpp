@@ -1427,7 +1427,7 @@ JobAlloc Schedule::add_job_first_fit_after_time_slice(const Job *job,
                 ++pit2;
 
                 for (; (pit2 != _profile.end()) && ((int)pit2->nb_available_machines >= job->nb_requested_resources);
-                     ++pit2)
+                    ++pit2)
                 {
                     availableMachines &= pit2->available_machines;
                     availableMachinesCount = (int)availableMachines.size();
@@ -2784,10 +2784,11 @@ string Schedule::TimeSlice::to_string_allocated_jobs() const
         //    LOG_F(INFO,"%.15f, ",kv_pair.first.convert_to<double>());
         //LOG_F(INFO,"here %.15f",this->begin.convert_to<double>());
         if (job->allocations.find(this->begin)!= job->allocations.end())
-            jobs_str.push_back("{\"job_id\":\"" + job->id + "\", \"alloc\":" +
+            // @note LH: added "\n\t\t\t\t" for debugging
+            jobs_str.push_back("\n\t\t\t\t{\"job_id\":\"" + job->id + "\", \"alloc\":" +
                               batsched_tools::to_json_string(job->allocations[this->begin]) +"}");
         else
-            jobs_str.push_back("{\"job_id\":\"" + job->id + "\", \"alloc\":{ \"used_machines\":\""+mit.second.to_string_hyphen()+"\" }}");
+            jobs_str.push_back("\n\t\t\t\t{\"job_id\":\"" + job->id + "\", \"alloc\":{ \"used_machines\":\""+mit.second.to_string_hyphen()+"\" }}");
 
         
     }

@@ -12,9 +12,7 @@
 #include <random>
 // @note LH: testing macros
 #define T_CSV_INSTANCE _testCSV
-#define T_TIME_INSTANCE _testTime
 #define T_LOG_INSTANCE _testLog
-#define SRC_FILE "easy_bf3"
 #define MIN(a,b) (((a)<(b)) ? (a) : (b))
 
 class EasyBackfilling3 : public ISchedulingAlgorithm
@@ -74,12 +72,10 @@ protected:
         int extra_resources;
         double shadow_time;
         double est_finish_time;
-        IntervalSet reserved_machines;
     };
     Priority_Job * _p_job = NULL;
     b_log *_testCSV;
     b_log *_testLog;
-    b_log *_testTime;
     IntervalSet _available_machines;
     int _nb_available_machines = -1;
     int _backfill_counter = 0;

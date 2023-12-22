@@ -18,16 +18,19 @@ struct Job;
 #define GET_TIME(now) { \
    struct timeval t; \
    gettimeofday(&t, NULL); \
-   now = t.tv_sec + t.tv_usec/1000000.; \
+   now = t.tv_sec + (t.tv_usec*1.0e-6); \
 }
 
 #define BLOG_F(log_type,fmt,...) B_LOG_INSTANCE->blog(log_type,fmt,date,## __VA_ARGS__)
 
 // @note LH: personal testing log
-#define TLOG_F(log_type,date, srcfile, fmt,...) T_LOG_INSTANCE->test_blog(log_type, date, srcfile, fmt, ## __VA_ARGS__)
+#define TLOG_F(log_type,date, fmt,...) T_LOG_INSTANCE->test_log(log_type, date,fmt, ## __VA_ARGS__)
+
+// @note LH: personal testing log
+#define TTIME_F(log_type,date, fmt,...) T_TIME_INSTANCE->test_log(log_type, date,fmt, ## __VA_ARGS__)
 
 // @note LH: printing csv files
-#define TCSV_F(log_type, date, fmt,...) T_CSV_INSTANCE->test_csv(log_type, date, fmt, ## __VA_ARGS__)
+#define TCSV_F(log_type, date, fmt,...) T_CSV_INSTANCE->test_log(log_type, date, fmt, ## __VA_ARGS__)
 
 class b_log{
     
@@ -35,15 +38,15 @@ public:
 b_log();
 ~b_log();
 // @note LH: added log types: TEST, CSV
-enum logging_type{FAILURES, TEST, CSV};
+enum logging_type{FAILURES, TEST, CSV, TIME};
 const char * logging_types = {"FAILURES"};
 void blog(logging_type type,std::string fmt, double date,...);
 void add_log_file(std::string file, logging_type type);
 std::unordered_map<logging_type,FILE*> _files;
-// @note LH: personal testing log
-void test_blog(logging_type type, double date, std::string src_file, std::string fmt, ...);
-// @note LH: printing csv files
-void test_csv(logging_type type, double date, std::string fmt, ...);
+
+// @note LH: added for new easy_bf3
+void update_log_file(std::string file,logging_type type);
+void test_log(logging_type type, double date, std::string fmt, ...);
 };
 
 
