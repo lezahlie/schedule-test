@@ -11,7 +11,9 @@
 #include "../batsched_tools.hpp"
 #include <random>
 // @note LH: testing macros
-#define T_CSV_INSTANCE _logTime
+#define T_CSV_INSTANCE _testCSV
+#define T_TIME_INSTANCE _testTime
+#define T_LOG_INSTANCE _testLog
 #define SRC_FILE "easy_bf3"
 #define MIN(a,b) (((a)<(b)) ? (a) : (b))
 
@@ -39,7 +41,7 @@ public:
     void handle_finished_job(std::string job_id, double date);
     void max_heap(int size, int root);
     void schedule_heap_sort(int size);
-
+   
 protected:
     Schedule _schedule;
     bool _debug = false;
@@ -48,7 +50,7 @@ protected:
     Queue * _reservation_queue=nullptr;
     b_log *_myBLOG;
     
-    // @note LH: My easy_bf3 additions 
+    // @note LH: All easy_bf additions
     struct Scheduled_Job
     {
         std::string id;
@@ -61,7 +63,10 @@ protected:
     };
     std::vector<Scheduled_Job *> _scheduled_jobs;
     Scheduled_Job * _tmp_job = NULL;
-
+    void log_queue(double date);
+    void log_schedule(double date);
+    void log_next_job(const Job * job, double date);
+    void log_priority_job(const Job * job, double date);
     struct Priority_Job
     {
         std::string id;
@@ -69,17 +74,19 @@ protected:
         int extra_resources;
         double shadow_time;
         double est_finish_time;
+        IntervalSet reserved_machines;
     };
     Priority_Job * _p_job = NULL;
-   
-
+    b_log *_testCSV;
+    b_log *_testLog;
+    b_log *_testTime;
     IntervalSet _available_machines;
     int _nb_available_machines = -1;
     int _backfill_counter = 0;
+
     bool _can_run = false;
     bool _is_priority = false;
 
-    b_log *_logTime;
     double _overall_time = 0.0;
     double _decision_time = 0.0;
     double _begin_overall = 0.0;

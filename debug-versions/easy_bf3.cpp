@@ -18,7 +18,9 @@ EasyBackfilling3::EasyBackfilling3(Workload * workload,
     _reservation_queue = new Queue(order);
 
     // @note LH: test csv file
-    _logTime = new b_log();
+    _testCSV = new b_log();
+    _testTime = new b_log();
+    _testLog = new b_log();
     _p_job = new Priority_Job();
 }
 
@@ -40,10 +42,17 @@ void EasyBackfilling3::on_simulation_start(double date, const rapidjson::Value &
     _output_folder.replace(_output_folder.rfind("/out"), std::string("/out").size(), "");
     LOG_F(INFO,"output folder %s",_output_folder.c_str());
 
+    // @note LH: create csv file for analyzing end time diffs
+    _testCSV->add_log_file(_output_folder+"/out_endtime_diffs.csv",b_log::CSV);
+    string header_fmt = "JOB_ID,START_TIME,RUN_TIME,EST_END_TIME,REAL_END_TIME";
+    TCSV_F(b_log::CSV, date, "%s", header_fmt.c_str());
+
     string time_dir="experiments/";
     string time_path= _output_folder.substr(0,_output_folder.find(time_dir));
-    _logTime->update_log_file(time_path+time_dir+SRC_FILE+"_time_data.csv",b_log::TIME);
+    _testTime->update_log_file(time_path+time_dir+SRC_FILE+"_time_data.csv",b_log::TIME);
 
+    // @note LH: create csv file for analyzing end time diffs
+    _testLog->add_log_file(_output_folder+"/decision_events.log",b_log::TEST);
     //was there
     ISchedulingAlgorithm::set_generators(date);
     
@@ -72,7 +81,7 @@ void EasyBackfilling3::on_simulation_end(double date)
                 
     );
     //  @note show total backfilled jobs
-    TCSV_F(b_log::TIME, date, "%s", time_str.c_str());
+    TTIME_F(b_log::TIME, date, "%s", time_str.c_str());
     (void) date;
     
 }
@@ -122,6 +131,7 @@ void EasyBackfilling3::make_decisions(double date,
     // If no resources have been released, we can just try to backfill the newly-released jobs
     if (_jobs_ended_recently.empty())
     {
+        log_queue(date);
         int nb_available_machines = _nb_available_machines;
         for (unsigned int i = 0; i < recently_queued_jobs.size() && nb_available_machines > 0; ++i)
         {
@@ -144,9 +154,11 @@ void EasyBackfilling3::make_decisions(double date,
                 }
             }
         }
+        log_schedule(date);
     }
     else
     {        // Some resources have been released, the whole queue should be traversed.
+        log_queue(date);
         auto job_it = _queue->begin();
         int nb_available_machines = _nb_available_machines;
         // Let's try to backfill all the jobs
@@ -163,6 +175,7 @@ void EasyBackfilling3::make_decisions(double date,
                 if(job == priority_job_after) priority_job_after = _queue->first_job_or_nullptr();
             }else ++job_it;  
         }
+        log_schedule(date);
     }
     
 
@@ -194,6 +207,7 @@ void EasyBackfilling3::sort_queue_while_handling_priority_job(const Job * priori
     // If the priority job has changed
     if (priority_job_after != priority_job_before)
     {
+        log_queue(update_info->current_date.convert_to<double>());
         // Let us ensure the priority job is in the schedule.
         // To do so, while the priority job can be executed now, we keep on inserting it into the schedule
         for (bool could_run_priority_job = true; could_run_priority_job && priority_job_after != nullptr; )
@@ -209,7 +223,9 @@ void EasyBackfilling3::sort_queue_while_handling_priority_job(const Job * priori
                 priority_job_after = _queue->first_job_or_nullptr();
                 could_run_priority_job = true;
             }
+             
         }
+        log_schedule(update_info->current_date.convert_to<double>());
     }
 }
 
@@ -247,6 +263,7 @@ void EasyBackfilling3::check_priority_job(const Job * priority_job, double date)
             }
         }
     }
+    log_priority_job(priority_job, date);
 }
 
 //@note LH: added function check if next job can be backfilled
@@ -269,6 +286,7 @@ void EasyBackfilling3::check_next_job(const Job * next_job, double date){
         schedule_heap_sort(_scheduled_jobs.size());
         _backfill_counter++;
     }
+    log_next_job(next_job, date);
 }
 
 //@note LH: added function to add jobs to the schedule
@@ -292,18 +310,37 @@ void EasyBackfilling3::handle_scheduled_job(const Job * job, double date){
 
 
 void EasyBackfilling3::handle_finished_job(string job_id, double date){
-    // @note LH: get finished job from scheduler
+    // @note LH: added fmt string for output csv
+    string row_fmt = "%s,%.15f,%.15f,%.15f,%.15f";
+
+    // @note LH: get finsihed jobs from scheduler
     auto j_iter = std::find_if(_scheduled_jobs.begin(), _scheduled_jobs.end(), [&](Scheduled_Job *sj) { 
         return (sj->id == job_id);
     });
 
-    // @note LH: return allocated machines to intervalset and add to machine count
-    _available_machines.insert(_tmp_job->allocated_machines);
-    _nb_available_machines += _tmp_job->requested_resources;
+    // @note LH: check if finished job exists
+    if (j_iter != _scheduled_jobs.end()){
+        auto j_index = distance(_scheduled_jobs.begin(), j_iter);
+        _tmp_job = _scheduled_jobs.at(j_index);
 
-    // @note LH: remove the finished job 
-    _scheduled_jobs.erase(j_iter);
-    _tmp_job = NULL;
+        // @note LH: print csv row to output csv
+        auto row_str = batsched_tools::string_format(row_fmt,
+            _tmp_job->id.c_str(),
+            _tmp_job->start_time,
+            _tmp_job->run_time,
+            _tmp_job->est_finish_time,
+            date
+        );
+        TCSV_F(b_log::CSV, date, "%s", row_str.c_str());
+
+        // @note LH: return allocated machines to intervalset and add to machine count
+        _available_machines.insert(_tmp_job->allocated_machines);
+        _nb_available_machines += _tmp_job->requested_resources;
+
+        // @note LH: remove the finished job 
+        _scheduled_jobs.erase(j_iter);
+        _tmp_job = NULL;
+    }
 }
 
 
@@ -333,3 +370,86 @@ void EasyBackfilling3::schedule_heap_sort(int size){
         max_heap(0, i);
     }
 }
+
+
+// @note logs priority jobs
+void EasyBackfilling3::log_priority_job(const Job * job, double date){  
+    string sep =  "===========================================================================================================================================";
+    string fmt1 = "[Check Priority Job] || Job_Id[%s]: Can_Run = %s, Est_End(If Started Now) = %.15f || Available_Resources = %d";
+    string fmt2 = "\n[Reserved Info] || Predicted_Start = %.15f, Predicted_End = %.15f, Extra_Resources(After Starting) = %d";
+    auto job_str = batsched_tools::string_format(
+        fmt1,
+        job->id.c_str(),
+        date+job->duration,
+        _can_run ?  "true" : "false",
+        _nb_available_machines
+    );
+    
+    if(!_can_run){
+        auto pri_str = batsched_tools::string_format(
+            fmt2,
+            _p_job->shadow_time,
+            _p_job->est_finish_time,
+            _p_job->extra_resources
+        );
+        job_str+=pri_str;
+    }
+   TLOG_F(b_log::TEST,date,"%s",sep.c_str());
+   TLOG_F(b_log::TEST, date, "%s",job_str.c_str());
+   
+}
+
+void EasyBackfilling3::log_next_job(const Job * job, double date){  
+    string sep =  "===========================================================================================================================================";
+    string fmt1 = "[Check Backfilling Job] ||  Job_Id[%s]: Can_Run = %s, Est_End(If Started Now) = %.15f || Available_Resources = %d";
+    auto job_str = batsched_tools::string_format(
+        fmt1,
+        job->id.c_str(),
+        date+job->duration,
+        _can_run ?  "true" : "false",
+        _nb_available_machines
+    );
+    TLOG_F(b_log::TEST,date,"%s",sep.c_str());
+    TLOG_F(b_log::TEST, date, "%s",job_str.c_str());
+}
+
+void EasyBackfilling3::log_schedule(double date){  
+    string sep =  "===========================================================================================================================================";
+    TLOG_F(b_log::TEST,date,"%s",sep.c_str());
+    TLOG_F(b_log::TEST,date,"[SCHEDULE]: Time = %.15f, Available_Resources = %d", date, _nb_available_machines);
+    TLOG_F(b_log::TEST,date,"%s",sep.c_str());
+    for(auto & sj: _scheduled_jobs){
+        auto res_str1 = batsched_tools::string_format(
+        "Job_Id[%s]: Start_Time = %.15f, Est_End_Time = %.15f, Used_Resources[%d] = %s",
+            sj->id.c_str(),
+            sj->start_time,
+            sj->est_finish_time,
+            sj->requested_resources,
+            sj->allocated_machines.to_string_hyphen().c_str()
+        );
+        TLOG_F(b_log::TEST,date,"%s", res_str1.c_str());
+    }
+    TLOG_F(b_log::TEST,date,"%s\n",sep.c_str());
+}
+
+//@note LH: added main function for heap sorting the schedule
+
+void EasyBackfilling3::log_queue(double date){   
+    string sep =  "===========================================================================================================================================";
+    vector<const Job *> queued_jobs;
+    _queue->get_current_queue(queued_jobs);
+    TLOG_F(b_log::TEST,date,"%s",sep.c_str());
+    TLOG_F(b_log::TEST,date,"[QUEUE]: Time = %.15f, Available_Resources = %d", date, _nb_available_machines);
+    TLOG_F(b_log::TEST,date, "%s",sep.c_str());
+    for(auto & qj: queued_jobs){
+        auto res_str2 = batsched_tools::string_format(
+            "Job_Id[%s]: Arrival_Time = %.15f, Run_Time = %.15f, Requested_Machines = %d",
+                qj->id.c_str(),
+                qj->submission_time,
+                qj->duration,
+                qj->nb_requested_resources
+        );
+        TLOG_F(b_log::TEST,date,"%s", res_str2.c_str());
+    }
+}
+

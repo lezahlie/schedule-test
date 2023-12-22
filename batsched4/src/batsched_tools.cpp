@@ -22,14 +22,6 @@ void b_log::add_log_file(std::string file,logging_type type){
     _files[type]=myFile;
 }
 
-void b_log::update_log_file(std::string file,logging_type type){
-    FILE* myFile=fopen(file.c_str(),"a");
-    fseek(myFile, 0, SEEK_END);
-    if(ftell(myFile)==0){
-        std::fprintf(myFile,"%s","Total_Jobs,Total_Machines,Overall_Time,Decision_Time,Total_Backfilled_Jobs\n");
-    }
-    _files[type]=myFile;
-}
 
 void b_log::blog(logging_type type, std::string fmt, double date, ...){
     if (_files.size() > 0 && _files.find(type) != _files.end()){
@@ -41,12 +33,10 @@ void b_log::blog(logging_type type, std::string fmt, double date, ...){
         std::vfprintf(file,fmt.c_str(),args);
         va_end(args);
     }
-
 }
 
-// @note LH: added for testing logs
+// @note LH: added for printing lines to log and csv files w/o leading info
 void b_log::test_log(logging_type type, double date, std::string fmt, ...){
-    
     if (_files.size() > 0 && _files.find(type) != _files.end()){
         va_list args;
         va_start(args, date);
@@ -58,6 +48,15 @@ void b_log::test_log(logging_type type, double date, std::string fmt, ...){
     
 }
 
+// @note LH: added for logging timing data from multiple experiments to the same csv
+void b_log::update_log_file(std::string file,logging_type type){
+    FILE* myFile=fopen(file.c_str(),"a");
+    fseek(myFile, 0, SEEK_END);
+    if(ftell(myFile)==0){
+        std::fprintf(myFile,"%s","Total_Jobs,Total_Machines,Overall_Time,Decision_Time,Total_Backfilled_Jobs\n");
+    }
+    _files[type]=myFile;
+}
 
 
 //a helper function to seperate_id

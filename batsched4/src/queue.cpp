@@ -404,7 +404,7 @@ void Queue::set_release_date_on_job(std::list<SortableJob *>::iterator job_it,Ra
 }
 
 
-// @note LH: added for debugged easybf
+// @note LH: added for debugged pruposes
 void Queue::get_current_queue(std::vector<const Job*> &tmp_queue){
     for (SortableJob * sj : _jobs){
         tmp_queue.push_back(sj->job);

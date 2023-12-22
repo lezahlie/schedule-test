@@ -23,13 +23,10 @@ struct Job;
 
 #define BLOG_F(log_type,fmt,...) B_LOG_INSTANCE->blog(log_type,fmt,date,## __VA_ARGS__)
 
-// @note LH: personal testing log
+// @note LH: added for debugging purposes
 #define TLOG_F(log_type,date, fmt,...) T_LOG_INSTANCE->test_log(log_type, date,fmt, ## __VA_ARGS__)
 
-// @note LH: personal testing log
-#define TTIME_F(log_type,date, fmt,...) T_TIME_INSTANCE->test_log(log_type, date,fmt, ## __VA_ARGS__)
-
-// @note LH: printing csv files
+// @note LH: added for continous time logging
 #define TCSV_F(log_type, date, fmt,...) T_CSV_INSTANCE->test_log(log_type, date, fmt, ## __VA_ARGS__)
 
 class b_log{
@@ -44,9 +41,10 @@ void blog(logging_type type,std::string fmt, double date,...);
 void add_log_file(std::string file, logging_type type);
 std::unordered_map<logging_type,FILE*> _files;
 
-// @note LH: added for new easy_bf3
-void update_log_file(std::string file,logging_type type);
+// @note LH: added for debugging purposes
 void test_log(logging_type type, double date, std::string fmt, ...);
+// @note LH: added for continous time logging
+void update_log_file(std::string file,logging_type type);
 };
 
 
