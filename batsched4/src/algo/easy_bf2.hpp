@@ -68,9 +68,7 @@ protected:
     std::vector<batsched_tools::KILL_TYPES> _on_machine_down_for_repairs;
     // @note added for time analysis
     int _backfill_counter = 0;
-    double _overall_time = 0.0;
     double _begin_overall = 0.0;
-    double _end_overall = 0.0;
     double _decision_time = 0.0;
     double _begin_decision = 0.0;
     double _end_decision = 0.0;

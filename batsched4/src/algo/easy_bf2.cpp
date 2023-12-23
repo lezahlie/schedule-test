@@ -85,15 +85,15 @@ void EasyBackfilling2::on_simulation_start(double date, const rapidjson::Value &
 void EasyBackfilling2::on_simulation_end(double date)
 {
     // @note LH added for time analysis
-    GET_TIME(_end_overall);
-    _overall_time=_end_overall-_begin_overall;
+    double end_overall = 0.0;
+    GET_TIME(end_overall);
      //  @note show total backfilled jobs
     auto time_str = batsched_tools::string_format(
             "%d,%d,%d,%.15f,%.15f",
                 _workload->nb_jobs(),
                 _nb_machines,
                 _backfill_counter,
-                _overall_time, 
+                end_overall-_begin_overall, 
                 _decision_time
     );
     //  @note show total backfilled jobs
