@@ -86,15 +86,15 @@ void EasyBackfilling2::on_simulation_end(double date)
 {
     // @note LH added for time analysis
     GET_TIME(_end_overall);
-    _overall_time = _end_overall-_begin_overall;
+    _overall_time=_end_overall-_begin_overall;
      //  @note show total backfilled jobs
     auto time_str = batsched_tools::string_format(
-            "%d,%d,%.15f,%.15f,%d",
+            "%d,%d,%d,%.15f,%.15f",
                 _workload->nb_jobs(),
                 _nb_machines,
+                _backfill_counter,
                 _overall_time, 
-                _decision_time, 
-                _backfill_counter
+                _decision_time
     );
     //  @note show total backfilled jobs
     TCSV_F(b_log::TIME, date, "%s", time_str.c_str());
@@ -441,7 +441,7 @@ void EasyBackfilling2::make_decisions(double date,
 
             if (_schedule.contains_job(job))
                 _schedule.remove_job(job);
-           
+
             if (job == priority_job_after) // If the current job is priority
             {
                 JobAlloc alloc = _schedule.add_job_first_fit(job, _selector);

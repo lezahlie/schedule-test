@@ -24,6 +24,8 @@ EasyBackfilling3::EasyBackfilling3(Workload * workload,
 
 EasyBackfilling3::~EasyBackfilling3()
 {
+    // @note deallocate priority job struct
+    delete _p_job;
 }
 
 
@@ -40,13 +42,15 @@ void EasyBackfilling3::on_simulation_start(double date, const rapidjson::Value &
     _output_folder.replace(_output_folder.rfind("/out"), std::string("/out").size(), "");
     LOG_F(INFO,"output folder %s",_output_folder.c_str());
 
+    //@note LH: the numbers of jobs in the schedule will be at most the number of machines
+    _scheduled_jobs.reserve(_nb_machines);
+    //@note LH: added csv file to update timing data (using append mode to record multiple simulations)
     string time_dir="experiments/";
     string time_path= _output_folder.substr(0,_output_folder.find(time_dir));
     _logTime->update_log_file(time_path+time_dir+SRC_FILE+"_time_data.csv",b_log::TIME);
 
     //was there
     ISchedulingAlgorithm::set_generators(date);
-    
     _available_machines.insert(IntervalSet::ClosedInterval(0, _nb_machines - 1));
     _nb_available_machines = _nb_machines;
     PPK_ASSERT_ERROR(_available_machines.size() == (unsigned int) _nb_machines);
@@ -59,19 +63,19 @@ void EasyBackfilling3::on_simulation_end(double date)
 {
 
     // @note LH added for time analysis
-    GET_TIME(_end_overall);
-    _overall_time = _end_overall-_begin_overall;
+    double end_overall = 0.0;
+    GET_TIME(end_overall);
+    // @note create csv row with simulation timing data
     string row_fmt = "%d,%d,%d,%.15f,%.15f";
     auto time_str = batsched_tools::string_format(
             row_fmt,
                 _workload->nb_jobs(),
                 _nb_machines,
                 _backfill_counter,
-                _overall_time, 
+                end_overall-_begin_overall,
                 _decision_time
-                
     );
-    //  @note show total backfilled jobs
+    //  @note update csv file with the timing data
     TCSV_F(b_log::TIME, date, "%s", time_str.c_str());
     (void) date;
     
@@ -118,28 +122,22 @@ void EasyBackfilling3::make_decisions(double date,
     // Queue sorting
     const Job * priority_job_after = nullptr;
     sort_queue_while_handling_priority_job(priority_job_before, priority_job_after, update_info, compare_info);
-
+    
     // If no resources have been released, we can just try to backfill the newly-released jobs
     if (_jobs_ended_recently.empty())
     {
-        int nb_available_machines = _nb_available_machines;
-        for (unsigned int i = 0; i < recently_queued_jobs.size() && nb_available_machines > 0; ++i)
+        for (unsigned int i = 0; i < recently_queued_jobs.size() && _nb_available_machines > 0; ++i)
         {
             const string & new_job_id = recently_queued_jobs[i];
             const Job * new_job = (*_workload)[new_job_id];
-
             // The job could have already been executed by sort_queue_while_handling_priority_job,
             // that's why we check whether the queue contains the job.
-            if (_queue->contains_job(new_job) 
-                && new_job != priority_job_after 
-                && new_job->nb_requested_resources <= nb_available_machines)
+            if (_queue->contains_job(new_job) && 
+                new_job != priority_job_after)
             {
-                
                 check_next_job(new_job, date);
-
                 if(_can_run){
                     _decision->add_execute_job(new_job_id, _tmp_job->allocated_machines, date);
-                    nb_available_machines -= new_job->nb_requested_resources;
                     _queue->remove_job(new_job);
                 }
             }
@@ -148,9 +146,8 @@ void EasyBackfilling3::make_decisions(double date,
     else
     {        // Some resources have been released, the whole queue should be traversed.
         auto job_it = _queue->begin();
-        int nb_available_machines = _nb_available_machines;
         // Let's try to backfill all the jobs
-        while (job_it != _queue->end() && nb_available_machines > 0)
+        while (job_it != _queue->end() && _nb_available_machines > 0)
         {
             const Job * job = (*job_it)->job;
 
@@ -201,11 +198,10 @@ void EasyBackfilling3::sort_queue_while_handling_priority_job(const Job * priori
             could_run_priority_job = false;
 
             // @note LH: (1) Initial scheduling of jobs
-            check_priority_job(priority_job_after, update_info->current_date.convert_to<double>());
+            check_priority_job(priority_job_after, C2DBL(update_info->current_date));
             if(_can_run){
-                _decision->add_execute_job(priority_job_after->id, _tmp_job->allocated_machines, update_info->current_date.convert_to<double>());
+                _decision->add_execute_job(priority_job_after->id, _tmp_job->allocated_machines, C2DBL(update_info->current_date));
                 _queue->remove_job(priority_job_after);
-
                 priority_job_after = _queue->first_job_or_nullptr();
                 could_run_priority_job = true;
             }
@@ -231,18 +227,24 @@ void EasyBackfilling3::check_priority_job(const Job * priority_job, double date)
     _can_run = _p_job->requested_resources <= machine_count;
 
     if(_can_run){
+
         // @note priority job can run so add it to the schedule
         handle_scheduled_job(priority_job,date);
+
         // @note sort the schedule
-        schedule_heap_sort(_scheduled_jobs.size());
+        sort_max_heap(_scheduled_jobs.size());
     }else{
+
         // @note if the priority job can't run then calculate when it will 
         for(auto & sj: _scheduled_jobs){
             machine_count += sj->requested_resources;
             if(machine_count >= _p_job->requested_resources){
+                // @note predicted start time
                 _p_job->shadow_time = sj->est_finish_time;
-                _p_job->est_finish_time = sj->est_finish_time+priority_job->duration;
-                _p_job->extra_resources = machine_count-priority_job->nb_requested_resources;
+                // @note predicted end time
+                _p_job->est_finish_time = sj->est_finish_time + C2DBL(priority_job->walltime);
+                // @note available resources after priority jobs reserved start time
+                _p_job->extra_resources = machine_count - priority_job->nb_requested_resources;
                 break;
             }
         }
@@ -252,36 +254,45 @@ void EasyBackfilling3::check_priority_job(const Job * priority_job, double date)
 //@note LH: added function check if next job can be backfilled
 void EasyBackfilling3::check_next_job(const Job * next_job, double date){   
 
-    /* @note
+    /* @note LH:
         job can be backfilled if the following is true:
-            - job will finish before the priority jobs reserved start (shadow) time -AND- the requested resources are <= current available resources
-            - otherwise job finishs after priority jobs start time -AND- the requested resources are <= MIN[current avaiable nodes, priority jobs extra nodes]
+            - job will finish before the priority jobs reserved start (shadow) time 
+                -AND- the requested resources are <= current available resources
+            - otherwise job finishs after priority jobs start time 
+                -AND- the requested resources are <= MIN[current available nodes, waiting priority job extra nodes]
     */
-    _can_run = ((date+next_job->duration) <= _p_job->shadow_time)
+    _can_run = ((date+C2DBL(next_job->walltime)) <= _p_job->shadow_time)
         ? (next_job->nb_requested_resources <= _nb_available_machines) 
-        : (next_job->nb_requested_resources <= (MIN(_nb_available_machines,_p_job->extra_resources)));
+        : (next_job->nb_requested_resources <= MIN(_nb_available_machines ,_p_job->extra_resources));
 
-    // @note  job can be backfilled so addd it tot he schedule
+    /* @note LH:
+        job can be backfilled, 
+            - add it to the schedule
+            - sort the schedule
+            - increase backfilled jobs count
+    */ 
     if(_can_run){
         handle_scheduled_job(next_job, date);
-
-        // @note sort the schedule
-        schedule_heap_sort(_scheduled_jobs.size());
+        sort_max_heap(_scheduled_jobs.size());
         _backfill_counter++;
     }
 }
 
 //@note LH: added function to add jobs to the schedule
 void EasyBackfilling3::handle_scheduled_job(const Job * job, double date){
+    // allocate space for scheduled job
     _tmp_job = new Scheduled_Job();
+    // @note convert wall time to a double
+    double tmp_walltime = C2DBL(job->walltime);
+
+    // @note set the scheduled jobs info
     _tmp_job->id = job->id;
     _tmp_job->requested_resources = job->nb_requested_resources;
-    _tmp_job->wall_time = job->walltime.convert_to<double>();
+    _tmp_job->wall_time = tmp_walltime;
     _tmp_job->run_time = job->duration;
     _tmp_job->start_time = date;
-    _tmp_job->est_finish_time = date+job->duration;
+    _tmp_job->est_finish_time = date + tmp_walltime;
     _tmp_job->allocated_machines = _available_machines.left(job->nb_requested_resources);
-
     // @note add the job to the schedule
     _scheduled_jobs.push_back(_tmp_job);
 
@@ -296,40 +307,56 @@ void EasyBackfilling3::handle_finished_job(string job_id, double date){
     auto j_iter = std::find_if(_scheduled_jobs.begin(), _scheduled_jobs.end(), [&](Scheduled_Job *sj) { 
         return (sj->id == job_id);
     });
+    if(j_iter != _scheduled_jobs.end()){
+        auto j_index = distance(_scheduled_jobs.begin(), j_iter);
+        _tmp_job = _scheduled_jobs.at(j_index);
+        // @note LH: return allocated machines to intervalset and add to machine count
+        _available_machines.insert(_tmp_job->allocated_machines);
+        _nb_available_machines += _tmp_job->requested_resources;
 
-    // @note LH: return allocated machines to intervalset and add to machine count
-    _available_machines.insert(_tmp_job->allocated_machines);
-    _nb_available_machines += _tmp_job->requested_resources;
+        // @note deallocate finished job struct
+        delete _tmp_job;
+        // @note LH: delete the pointer to the job struct from the vector
+        _scheduled_jobs.erase(j_iter);
+    }
 
-    // @note LH: remove the finished job 
-    _scheduled_jobs.erase(j_iter);
-    _tmp_job = NULL;
 }
 
 
-//@note LH: added helper function to turn schedule into a maximum heap
-void EasyBackfilling3::max_heap(int root, int size){
-    // Find largest among root, left child and right child
+//@note LH: added helper sub-function to turn schedule into a maximum heap
+void EasyBackfilling3::max_heapify(int root, int size){
+    // @note find the max root node, left node, and right node
     int max = root, left = (2 * root) + 1, right = left + 1;
-    if (left < size && _scheduled_jobs[left]->est_finish_time > _scheduled_jobs[max]->est_finish_time)
-        max = left;
-    if (right < size && _scheduled_jobs[right]->est_finish_time  > _scheduled_jobs[max]->est_finish_time)
-        max = right;
 
-    // Swap and continue heapifying if root is not largest
+    // @note LH: if not the last node -AND- the left is more than the root, set left node as new max root
+    if (left < size && _scheduled_jobs[left]->est_finish_time > _scheduled_jobs[max]->est_finish_time){
+        max = left;
+    }
+    // @note LH: if not the last node -AND- right node is more than the root, set right node as new max root
+    if (right < size && _scheduled_jobs[right]->est_finish_time  > _scheduled_jobs[max]->est_finish_time){
+        max = right;
+    }
+
+    // @note swap[max_root(max),last_node(size)] and heapify the new max root
     if (max != root) {
         swap(_scheduled_jobs[root], _scheduled_jobs[max]);
-        max_heap(max, size);
+        max_heapify(max, size);
     }
 }
 
-//@note LH: added main function for heap sorting the schedule
-void EasyBackfilling3::schedule_heap_sort(int size){
-    for(int i = size / 2; i >= 0; i--)
-        max_heap(i, size);
-    int n = size;
-    for(int i = size - 1; i > 0; i--){
-        swap(_scheduled_jobs[0], _scheduled_jobs[i]);
-        max_heap(0, i);
+//@note LH: added heaper function for heap sorting the schedule
+void EasyBackfilling3::sort_max_heap(int size){
+    //@note LH: no need to sort if there is less than 2 jobs
+    if(size < 2) return;
+
+    // @note LH: build the new max heap
+    for(int i = size / 2; i >= 0; i--){
+        max_heapify(i, size);
+    }
+
+    // @note LH: sort the new max heap
+    for(int j = size - 1; j > 0; j--){
+        swap(_scheduled_jobs[0], _scheduled_jobs[j]);
+        max_heapify(0, j);
     }
 }

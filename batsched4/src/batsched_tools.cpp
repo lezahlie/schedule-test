@@ -53,7 +53,7 @@ void b_log::update_log_file(std::string file,logging_type type){
     FILE* myFile=fopen(file.c_str(),"a");
     fseek(myFile, 0, SEEK_END);
     if(ftell(myFile)==0){
-        std::fprintf(myFile,"%s","Total_Jobs,Total_Machines,Overall_Time,Decision_Time,Total_Backfilled_Jobs\n");
+        std::fprintf(myFile,"%s","Total_Jobs,Total_Machines,Total_Backfilled,Overall_Time,Decision_Time\n");
     }
     _files[type]=myFile;
 }
