@@ -22,6 +22,7 @@ EasyBackfilling2::EasyBackfilling2(Workload * workload,
     _reservation_queue = new Queue(order);
     // @todo remove after debugging
     _logTime = new b_log();
+    _logDebug = new b_log();
 }
 
 EasyBackfilling2::~EasyBackfilling2()
