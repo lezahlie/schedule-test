@@ -8,9 +8,14 @@
 #include "../machine.hpp"
 #include "../batsched_tools.hpp"
 #include <random>
+
 // @todo remove after debugging
+#define T_LOG_INSTANCE _logDebug
+
+// @note LH: Added for logging time data
 #define T_CSV_INSTANCE _logTime
 #define SRC_FILE "easy_bf2"
+
 class EasyBackfilling2 : public ISchedulingAlgorithm
 {
 public:
@@ -36,6 +41,13 @@ public:
     //virtual void set_workloads(myBatsched::Workloads * w);
     virtual void set_machines(Machines *m);
     virtual void on_requested_call(double date,int id,  batsched_tools::call_me_later_types forWhat);
+
+    // @todo remove after debugging
+    void log_queue(double date);
+    void log_schedule(double date);
+    void log_priority_job(const Job * job, bool can_run, double date);
+    void log_next_job(const Job * job, bool can_run, double date);
+
 protected:
     Schedule _schedule;
     bool _debug = false;
@@ -73,4 +85,7 @@ protected:
     double _begin_decision = 0.0;
     double _end_decision = 0.0;
     b_log *_logTime;
+
+    // @todo LH: remove after debugging
+    b_log *_logDebug;
 };

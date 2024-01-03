@@ -10,6 +10,10 @@
 #include "../machine.hpp"
 #include "../batsched_tools.hpp"
 #include <random>
+
+// @todo LH: remove after debugging
+#define T_LOG_INSTANCE _logDebug
+
 // @note LH: Added for logging time data
 #define T_CSV_INSTANCE _logTime
 #define SRC_FILE "easy_bf3"
@@ -17,6 +21,7 @@
 #define MIN(a,b) (((a)<(b)) ? (a) : (b))
 // @note LH: converts some numerical type to type double
 #define C2DBL(x) (x.convert_to<double>()) 
+
 class EasyBackfilling3 : public ISchedulingAlgorithm
 {
 public:
@@ -41,6 +46,12 @@ public:
     void handle_finished_job(std::string job_id, double date);
     void max_heapify(int size, int root);
     void sort_max_heap(int size);
+
+    // @todo remove after debugging
+    void log_queue(double date);
+    void log_schedule(double date);
+    void log_next_job(const Job * job, double date);
+    void log_priority_job(const Job * job, double date);
 
 protected:
     Schedule _schedule;
@@ -86,4 +97,7 @@ protected:
     double _decision_time = 0.0;
     double _begin_decision = 0.0;
     double _end_decision = 0.0;
+    
+    // @todo LH: remove after debugging
+    b_log *_logDebug;
 };

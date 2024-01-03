@@ -404,6 +404,9 @@ void EasyBackfilling2::make_decisions(double date,
     // If no resources have been released, we can just try to backfill the newly-released jobs
     if (_jobs_ended_recently.empty())
     {
+        //@todo remove after debugging
+        log_queue(date);   
+
         int nb_available_machines = _schedule.begin()->available_machines.size();
         for (unsigned int i = 0; i < recently_queued_jobs.size() && nb_available_machines > 0; ++i)
         {
@@ -417,6 +420,10 @@ void EasyBackfilling2::make_decisions(double date,
                 new_job->nb_requested_resources <= nb_available_machines)
             {
                 JobAlloc alloc = _schedule.add_job_first_fit(new_job, _selector);
+
+                //@todo remove after debugging
+                log_next_job(new_job,alloc.started_in_first_slice, date);
+
                 if ( alloc.started_in_first_slice)
                 {
                     _decision->add_execute_job(new_job_id, alloc.used_machines, date);
@@ -428,12 +435,16 @@ void EasyBackfilling2::make_decisions(double date,
                     _schedule.remove_job(new_job);
             }
         }
+        //@todo remove after debugging
+        log_schedule(date);   
     }
     else
     {
         // Some resources have been released, the whole queue should be traversed.
         auto job_it = _queue->begin();
         int nb_available_machines = _schedule.begin()->available_machines.size();
+        //@todo remove after debugging
+        log_queue(date);  
         // Let's try to backfill all the jobs
         while (job_it != _queue->end() && nb_available_machines > 0)
         {
@@ -445,6 +456,10 @@ void EasyBackfilling2::make_decisions(double date,
             if (job == priority_job_after) // If the current job is priority
             {
                 JobAlloc alloc = _schedule.add_job_first_fit(job, _selector);
+
+                //@todo remove after debugging
+                log_priority_job(priority_job_after,alloc.started_in_first_slice, date);
+
                 if (alloc.started_in_first_slice)
                 {
                     _decision->add_execute_job(job->id, alloc.used_machines, date);
@@ -454,11 +469,14 @@ void EasyBackfilling2::make_decisions(double date,
                 else
                     ++job_it;
                 
-               
             } 
             else // The job is not priority
             {
                 JobAlloc alloc = _schedule.add_job_first_fit(job, _selector);
+
+                //@todo remove after debugging
+                log_next_job(job,alloc.started_in_first_slice, date);
+
                 if (alloc.started_in_first_slice)
                 {
                     _decision->add_execute_job(job->id, alloc.used_machines, date);
@@ -472,6 +490,8 @@ void EasyBackfilling2::make_decisions(double date,
                 }
             }
         }
+        //@todo remove after debugging
+        log_schedule(date); 
     }
 
     // @note LH added for time analysis
@@ -500,6 +520,10 @@ void EasyBackfilling2::sort_queue_while_handling_priority_job(const Job * priori
         // If there was a priority job before, let it be removed from the schedule
         if (priority_job_before != nullptr)
             _schedule.remove_job_if_exists(priority_job_before);
+
+        //@todo remove after debugging
+        log_queue((double)update_info->current_date); 
+
         // Let us ensure the priority job is in the schedule.
         // To do so, while the priority job can be executed now, we keep on inserting it into the schedule
         for (bool could_run_priority_job = true; could_run_priority_job && priority_job_after != nullptr; )
@@ -509,6 +533,9 @@ void EasyBackfilling2::sort_queue_while_handling_priority_job(const Job * priori
             // Let's add the priority job into the schedule
             JobAlloc alloc = _schedule.add_job_first_fit(priority_job_after, _selector);
             
+            //@todo remove after debugging
+            log_priority_job(priority_job_after,alloc.started_in_first_slice,(double)update_info->current_date);
+
             if (alloc.started_in_first_slice)
             { 
                 _decision->add_execute_job(priority_job_after->id, alloc.used_machines, (double)update_info->current_date);
@@ -517,8 +544,85 @@ void EasyBackfilling2::sort_queue_while_handling_priority_job(const Job * priori
                 could_run_priority_job = true;
             }
         }
+        
+        //@todo remove after debugging
+        log_schedule((double)update_info->current_date);  
     }
 
     if (_debug)
         LOG_F(1, "sort_queue_while_handling_priority_job ending, %s", _schedule.to_string().c_str());
+}
+
+
+/*
+    @todo remove debug logging below
+*/
+
+void EasyBackfilling2::log_schedule(double date){  
+    string sep =  "===========================================================================================================================================";
+    int nb_avaiable_machines = _schedule.begin()->available_machines.size();
+    TLOG_F(b_log::TEST,date,"%s",sep.c_str());
+    TLOG_F(b_log::TEST,date,"[SCHEDULE]: Time = %.15f, Available_Resources = %d", date, nb_avaiable_machines);
+    TLOG_F(b_log::TEST,date,"%s",sep.c_str());
+
+    for(auto & sj: _schedule){
+        auto res_str1 = batsched_tools::string_format(
+            "%s",
+            sj.to_json_string().c_str()
+        );
+        TLOG_F(b_log::TEST,date,"%s", res_str1.c_str());
+    }
+    TLOG_F(b_log::TEST,date,"%s\n",sep.c_str());
+}
+
+void EasyBackfilling2::log_queue(double date){   
+    string sep =  "===========================================================================================================================================";
+    vector<const Job *> queued_jobs;
+    _queue->get_current_queue(queued_jobs);
+    int nb_avaiable_machines = _schedule.begin()->available_machines.size();
+
+    TLOG_F(b_log::TEST,date,"%s",sep.c_str());
+    TLOG_F(b_log::TEST,date,"[QUEUE]: Time = %.15f, Available_Resources = %d", date, nb_avaiable_machines);
+    TLOG_F(b_log::TEST,date, "%s",sep.c_str());
+
+    for(auto & qj: queued_jobs){
+        auto res_str2 = batsched_tools::string_format(
+            "Job_Id[%s]: Arrival_Time = %.15f, Run_Time = %.15f, Requested_Machines = %d",
+                qj->id.c_str(),
+                qj->submission_time,
+                qj->duration,
+                qj->nb_requested_resources
+        );
+        TLOG_F(b_log::TEST,date,"%s", res_str2.c_str());
+    }
+}
+
+void EasyBackfilling2::log_priority_job(const Job * job, bool can_run, double date){  
+    string sep =  "===========================================================================================================================================";
+    string fmt1 = "[Check Priority Job] || Job_Id[%s]: Can_Run = %s,  Est_End(If Started Now) = %.15f || Available_Resources = %d";
+    int nb_avaiable_machines = _schedule.begin()->available_machines.size();
+    auto job_str = batsched_tools::string_format(
+        fmt1,
+        job->id.c_str(),
+        can_run ?  "true" : "false",
+        date+job->duration,
+        nb_avaiable_machines
+    );
+    TLOG_F(b_log::TEST,date,"%s",sep.c_str());
+    TLOG_F(b_log::TEST, date, "%s",job_str.c_str());
+}
+
+void EasyBackfilling2::log_next_job(const Job * job, bool can_run, double date){  
+    string sep =  "===========================================================================================================================================";
+    string fmt1 = "[Check Backfilling Job] || Job_Id[%s]: Can_Run = %s,  Est_End(If Started Now) = %.15f || Available_Resources = %d";
+    int nb_avaiable_machines = _schedule.begin()->available_machines.size();
+    auto job_str = batsched_tools::string_format(
+        fmt1,
+        job->id.c_str(),
+        can_run ?  "true" : "false",
+        date+job->duration,
+        nb_avaiable_machines
+    );
+    TLOG_F(b_log::TEST,date,"%s",sep.c_str());
+    TLOG_F(b_log::TEST, date, "%s",job_str.c_str());
 }

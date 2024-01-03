@@ -2784,9 +2784,10 @@ string Schedule::TimeSlice::to_string_allocated_jobs() const
         //    LOG_F(INFO,"%.15f, ",kv_pair.first.convert_to<double>());
         //LOG_F(INFO,"here %.15f",this->begin.convert_to<double>());
         if (job->allocations.find(this->begin)!= job->allocations.end())
+
             // @note LH: added "\n\t\t\t\t" for debugging
             jobs_str.push_back("\n\t\t\t\t{\"job_id\":\"" + job->id + "\", \"alloc\":" +
-                              batsched_tools::to_json_string(job->allocations[this->begin]) +"}");
+                            batsched_tools::to_json_string(job->allocations[this->begin]) +"}");
         else
             jobs_str.push_back("\n\t\t\t\t{\"job_id\":\"" + job->id + "\", \"alloc\":{ \"used_machines\":\""+mit.second.to_string_hyphen()+"\" }}");
 
