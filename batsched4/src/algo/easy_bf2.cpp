@@ -89,10 +89,11 @@ void EasyBackfilling2::on_simulation_end(double date)
     GET_TIME(end_overall);
      //  @note show total backfilled jobs
     auto time_str = batsched_tools::string_format(
-            "%d,%d,%d,%.15f,%.15f",
+            "%d,%d,%d,%d,%.15f,%.15f",
                 _workload->nb_jobs(),
                 _nb_machines,
                 _backfill_counter,
+                _decision_counter,
                 end_overall-_begin_overall, 
                 _decision_time
     );
@@ -477,6 +478,7 @@ void EasyBackfilling2::make_decisions(double date,
     // @note LH added for time analysis
     GET_TIME(_end_decision);
     _decision_time += (_end_decision-_begin_decision);
+    _decision_counter++;
 }
 
 

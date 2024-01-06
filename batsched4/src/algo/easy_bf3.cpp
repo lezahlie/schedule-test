@@ -66,12 +66,13 @@ void EasyBackfilling3::on_simulation_end(double date)
     double end_overall = 0.0;
     GET_TIME(end_overall);
     // @note create csv row with simulation timing data
-    string row_fmt = "%d,%d,%d,%.15f,%.15f";
+    string row_fmt = "%d,%d,%d,%d,%.15f,%.15f";
     auto time_str = batsched_tools::string_format(
             row_fmt,
                 _workload->nb_jobs(),
                 _nb_machines,
                 _backfill_counter,
+                _decision_counter,
                 end_overall-_begin_overall,
                 _decision_time
     );
@@ -174,6 +175,7 @@ void EasyBackfilling3::make_decisions(double date,
     // @note LH added for time analysis
     GET_TIME(_end_decision);
     _decision_time += (_end_decision-_begin_decision);
+    _decision_counter++;
 }
 
 

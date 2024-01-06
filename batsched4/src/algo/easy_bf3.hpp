@@ -73,11 +73,12 @@ protected:
         double est_finish_time;
     };
     Priority_Job * _p_job = NULL;
-   
+
+    int _backfill_counter = 0;
+    int _decision_counter = 0;
 
     IntervalSet _available_machines;
     int _nb_available_machines = -1;
-    int _backfill_counter = 0;
     bool _can_run = false;
     bool _is_priority = false;
 
