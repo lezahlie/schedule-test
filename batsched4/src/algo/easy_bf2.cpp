@@ -195,11 +195,7 @@ void EasyBackfilling2::on_machine_down_for_repair(batsched_tools::KILL_TYPES for
         //_schedule.remove_svg_highlight_machines(machine);
         if (_output_svg == "all")
             _schedule.output_to_svg("Finished Machine Down For Repairs, NO REPAIR  Machine #:  "+std::to_string(number));
-    
     }
-    
-        
-  
     
 }
 
@@ -258,86 +254,85 @@ void EasyBackfilling2::on_machine_instant_down_up(batsched_tools::KILL_TYPES for
 
 void EasyBackfilling2::on_requested_call(double date,int id,batsched_tools::call_me_later_types forWhat)
 {
-        if (_output_svg != "none")
-            _schedule.set_now((Rational)date);
-        switch (forWhat){
-            
-            case batsched_tools::call_me_later_types::SMTBF:
-                        {
-                            //Log the failure
-                            //BLOG_F(b_log::FAILURES,"FAILURE SMTBF");
-                            if (_schedule.get_number_of_running_jobs() > 0 || !_queue->is_empty() || !_no_more_static_job_to_submit_received)
-                                {
-                                    double number = failure_exponential_distribution->operator()(generator_failure);
-                                    LOG_F(INFO,"%f %f",_workload->_repair_time,_workload->_MTTR);
-                                    if (_workload->_repair_time == 0.0 && _workload->_MTTR == -1.0)
-                                        _on_machine_instant_down_ups.push_back(batsched_tools::KILL_TYPES::SMTBF);                                        
-                                    else
-                                        _on_machine_down_for_repairs.push_back(batsched_tools::KILL_TYPES::SMTBF);
-                                    _decision->add_call_me_later(batsched_tools::call_me_later_types::SMTBF,1,number+date,date);
-                                }
-                        }
-                        break;
-            /* TODO
-            case batsched_tools::call_me_later_types::MTBF:
-                        {
-                            if (!_running_jobs.empty() || !_pending_jobs.empty() || !_no_more_static_job_to_submit_received)
+    if (_output_svg != "none")
+        _schedule.set_now((Rational)date);
+    switch (forWhat){
+        
+        case batsched_tools::call_me_later_types::SMTBF:
+                    {
+                        //Log the failure
+                        //BLOG_F(b_log::FAILURES,"FAILURE SMTBF");
+                        if (_schedule.get_number_of_running_jobs() > 0 || !_queue->is_empty() || !_no_more_static_job_to_submit_received)
                             {
-                                double number = distribution->operator()(generator);
-                                on_myKillJob_notify_event(date);
-                                _decision->add_call_me_later(batsched_tools::call_me_later_types::MTBF,1,number+date,date);
-
+                                double number = failure_exponential_distribution->operator()(generator_failure);
+                                LOG_F(INFO,"%f %f",_workload->_repair_time,_workload->_MTTR);
+                                if (_workload->_repair_time == 0.0 && _workload->_MTTR == -1.0)
+                                    _on_machine_instant_down_ups.push_back(batsched_tools::KILL_TYPES::SMTBF);                                        
+                                else
+                                    _on_machine_down_for_repairs.push_back(batsched_tools::KILL_TYPES::SMTBF);
+                                _decision->add_call_me_later(batsched_tools::call_me_later_types::SMTBF,1,number+date,date);
                             }
-                        
-                            
-                        }
-                        break;
-            */
-            case batsched_tools::call_me_later_types::FIXED_FAILURE:
+                    }
+                    break;
+        /* TODO
+        case batsched_tools::call_me_later_types::MTBF:
+                    {
+                        if (!_running_jobs.empty() || !_pending_jobs.empty() || !_no_more_static_job_to_submit_received)
                         {
-                            //BLOG_F(b_log::FAILURES,"FAILURE FIXED_FAILURE");
-                            LOG_F(INFO,"DEBUG");
-                            if (_schedule.get_number_of_running_jobs() > 0 || !_queue->is_empty() || !_no_more_static_job_to_submit_received)
-                                {
-                                    LOG_F(INFO,"DEBUG");
-                                    double number = _workload->_fixed_failures;
-                                    if (_workload->_repair_time == 0.0 & _workload->_MTTR == -1.0)
-                                        _on_machine_instant_down_ups.push_back(batsched_tools::KILL_TYPES::FIXED_FAILURE);//defer to after make_decisions
-                                    else
-                                        _on_machine_down_for_repairs.push_back(batsched_tools::KILL_TYPES::FIXED_FAILURE);
-                                    _decision->add_call_me_later(batsched_tools::call_me_later_types::FIXED_FAILURE,1,number+date,date);
-                                }
-                        }
-                        break;
-            
-            case batsched_tools::call_me_later_types::REPAIR_DONE:
-                        {
-                            //BLOG_F(b_log::FAILURES,"REPAIR_DONE");
-                            //a repair is done, all that needs to happen is add the machines to available
-                            //and remove them from repair machines and add one to the number of available
-                            if (_output_svg == "all")
-                                _schedule.output_to_svg("top Repair Done  Machine #: "+std::to_string(id));
-                            IntervalSet machine = id;
-                            _schedule.remove_repair_machines(machine);
-                            _schedule.remove_svg_highlight_machines(machine);
-                             if (_output_svg == "all")
-                                _schedule.output_to_svg("bottom Repair Done  Machine #: "+std::to_string(id));
-                           
-                           //LOG_F(INFO,"in repair_machines.size(): %d nb_avail: %d avail: %d  running_jobs: %d",_repair_machines.size(),_nb_available_machines,_available_machines.size(),_running_jobs.size());
-                        }
-                        break;
-            
-            case batsched_tools::call_me_later_types::RESERVATION_START:
-                        {
-                            _start_a_reservation = true;
-                            //SortableJobOrder::UpdateInformation update_info(date);
-                            //make_decisions(date,&update_info,nullptr);
-                            
-                        }
-                        break;
-        }
-    
+                            double number = distribution->operator()(generator);
+                            on_myKillJob_notify_event(date);
+                            _decision->add_call_me_later(batsched_tools::call_me_later_types::MTBF,1,number+date,date);
 
+                        }
+                    
+                        
+                    }
+                    break;
+        */
+        case batsched_tools::call_me_later_types::FIXED_FAILURE:
+                    {
+                        //BLOG_F(b_log::FAILURES,"FAILURE FIXED_FAILURE");
+                        LOG_F(INFO,"DEBUG");
+                        if (_schedule.get_number_of_running_jobs() > 0 || !_queue->is_empty() || !_no_more_static_job_to_submit_received)
+                            {
+                                LOG_F(INFO,"DEBUG");
+                                double number = _workload->_fixed_failures;
+                                if (_workload->_repair_time == 0.0 & _workload->_MTTR == -1.0)
+                                    _on_machine_instant_down_ups.push_back(batsched_tools::KILL_TYPES::FIXED_FAILURE);//defer to after make_decisions
+                                else
+                                    _on_machine_down_for_repairs.push_back(batsched_tools::KILL_TYPES::FIXED_FAILURE);
+                                _decision->add_call_me_later(batsched_tools::call_me_later_types::FIXED_FAILURE,1,number+date,date);
+                            }
+                    }
+                    break;
+        
+        case batsched_tools::call_me_later_types::REPAIR_DONE:
+                    {
+                        //BLOG_F(b_log::FAILURES,"REPAIR_DONE");
+                        //a repair is done, all that needs to happen is add the machines to available
+                        //and remove them from repair machines and add one to the number of available
+                        if (_output_svg == "all")
+                            _schedule.output_to_svg("top Repair Done  Machine #: "+std::to_string(id));
+                        IntervalSet machine = id;
+                        _schedule.remove_repair_machines(machine);
+                        _schedule.remove_svg_highlight_machines(machine);
+                        if (_output_svg == "all")
+                            _schedule.output_to_svg("bottom Repair Done  Machine #: "+std::to_string(id));
+
+                        //LOG_F(INFO,"in repair_machines.size(): %d nb_avail: %d avail: %d  running_jobs: %d",_repair_machines.size(),_nb_available_machines,_available_machines.size(),_running_jobs.size());
+                    }
+                    break;
+        
+        case batsched_tools::call_me_later_types::RESERVATION_START:
+                    {
+                        _start_a_reservation = true;
+                        //SortableJobOrder::UpdateInformation update_info(date);
+                        //make_decisions(date,&update_info,nullptr);
+                        
+                    }
+                    break;
+    }
+    
 }
 
 void EasyBackfilling2::make_decisions(double date,

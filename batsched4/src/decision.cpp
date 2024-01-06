@@ -506,9 +506,8 @@ double SchedulingDecision::remove_call_me_later(batsched_tools::call_me_later_ty
     _call_me_laters.erase(id);
     if (date > call_me_later.time)
     {
-        if (call_me_later.forWhat == batsched_tools::call_me_later_types::RESERVATION_START)
-            ((*w0)[call_me_later.job_id])->walltime -=( date - call_me_later.time);
-        return date - call_me_later.time;
+
+
     }
     else
         return 0;

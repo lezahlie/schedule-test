@@ -357,6 +357,7 @@ void Schedule::convert_policy(std::string policy, RESCHEDULE_POLICY & variable){
         variable = RESCHEDULE_POLICY::NONE;
     return;
 }
+
 void Schedule::convert_policy(std::string policy, IMPACT_POLICY & variable){
     if (policy == "LEAST_KILLING_LARGEST_FIRST")
         variable = IMPACT_POLICY::LEAST_KILLING_LARGEST_FIRST;
@@ -368,6 +369,7 @@ void Schedule::convert_policy(std::string policy, IMPACT_POLICY & variable){
         variable = IMPACT_POLICY::NONE;
     return;
 }
+
 void Schedule::add_svg_highlight_machines(IntervalSet machines)
 {
     _svg_highlight_machines += machines;
